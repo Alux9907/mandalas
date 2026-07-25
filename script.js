@@ -1,5 +1,5 @@
 // ============================================
-// GENERADOR DE MANDALAS - CON FLOR QUE FLORECE
+// GENERADOR DE MANDALAS - CON MODO CADENA
 // ============================================
 
 // ============================================
@@ -63,6 +63,17 @@ let flowerProgress = 0;
 let flowerPoints = [];
 let flowerTotalPoints = 0;
 let flowerMaxRadius = 0;
+
+// ============================================
+// 1.8. MODO CADENA
+// ============================================
+
+let isChainMode = false;
+let chainAnimationId = null;
+let chainStep = 0;
+let chainMaxSteps = 30;
+let chainSpeed = 5;
+let chainHistory = [];
 
 // ============================================
 // 2. FUNCIONES DE DIBUJO
@@ -312,9 +323,10 @@ function drawCenterDot(angleOffset = 0) {
 function generateMandala() {
     if (isAnimating) return;
     
-    // Detener rotación y modo flor
+    // Detener rotación, modo flor y cadena
     stopRotation();
     stopFlowerMode();
+    stopChainMode();
     
     drawBackground();
     
@@ -362,6 +374,7 @@ function generateWithAnimation() {
     
     stopRotation();
     stopFlowerMode();
+    stopChainMode();
     
     isAnimating = true;
     
@@ -474,16 +487,14 @@ function toggleRotation() {
 // ============================================
 
 function startFlowerMode() {
-    // Detener cualquier animación previa
     stopFlowerMode();
     stopRotation();
+    stopChainMode();
     
     if (isAnimating) return;
     
-    // Si no hay puntos, generar un mandala primero
     if (currentPoints.length === 0) {
         generateMandala();
-        // Esperar a que se genere
         setTimeout(() => {
             if (currentPoints.length > 0) {
                 startFlowerAnimation();
@@ -501,7 +512,6 @@ function startFlowerAnimation() {
     flowerTotalPoints = flowerPoints.length;
     flowerMaxRadius = 0;
     
-    // Calcular el radio máximo de los puntos
     for (const p of flowerPoints) {
         const dist = Math.sqrt((p.x - CENTER_X) ** 2 + (p.y - CENTER_Y) ** 2);
         if (dist > flowerMaxRadius) flowerMaxRadius = dist;
@@ -509,39 +519,27 @@ function startFlowerAnimation() {
     
     document.getElementById('flowerModeBtn').textContent = '🌸 Floreciendo...';
     document.getElementById('flowerModeBtn').style.opacity = '0.7';
-    document.getElementById('stopFlowerBtn').style.display = 'inline-block';
     
-    // Dibujar el fondo
     drawBackground();
     
-    // Animación: dibujar puntos desde el centro hacia afuera
     function drawFlowerStep() {
         if (!isFlowerMode) return;
         
-        // Limpiar y dibujar fondo
         drawBackground();
         
-        // Calcular el radio actual basado en el progreso
         const currentRadius = flowerMaxRadius * easeOutCubic(flowerProgress);
         
-        // Dibujar solo los puntos que están dentro del radio actual
-        let drawnCount = 0;
         for (const p of flowerPoints) {
             const dist = Math.sqrt((p.x - CENTER_X) ** 2 + (p.y - CENTER_Y) ** 2);
             if (dist <= currentRadius) {
                 drawShape(p.x, p.y, p.color, p.size, 0);
-                drawnCount++;
             }
         }
         
-        // Dibujar el centro
         drawCenterDot(0);
-        
-        // Actualizar progreso
-        flowerProgress += 0.005; // Velocidad de floración
+        flowerProgress += 0.005;
         
         if (flowerProgress >= 1) {
-            // Terminar: dibujar todo el mandala
             drawMandalaFromPoints(flowerPoints, 0);
             document.getElementById('flowerModeBtn').textContent = '🌸 Flor completa 🌸';
             document.getElementById('flowerModeBtn').style.opacity = '1';
@@ -564,7 +562,6 @@ function stopFlowerMode() {
     }
     document.getElementById('flowerModeBtn').textContent = '🌸 Flor que florece';
     document.getElementById('flowerModeBtn').style.opacity = '1';
-    document.getElementById('stopFlowerBtn').style.display = 'inline-block';
 }
 
 function easeOutCubic(t) {
@@ -572,7 +569,113 @@ function easeOutCubic(t) {
 }
 
 // ============================================
-// 7. PALETAS
+// 7. MODO MANDALAS EN CADENA
+// ============================================
+
+function startChainMode() {
+    // Detener otros modos
+    stopChainMode();
+    stopRotation();
+    stopFlowerMode();
+    
+    if (isAnimating) return;
+    
+    // Inicializar historial
+    chainHistory = [];
+    chainStep = 0;
+    
+    // Generar el primer mandala si no hay puntos
+    if (currentPoints.length === 0) {
+        generateMandala();
+        setTimeout(() => {
+            if (currentPoints.length > 0) {
+                startChainAnimation();
+            }
+        }, 200);
+    } else {
+        startChainAnimation();
+    }
+}
+
+function startChainAnimation() {
+    isChainMode = true;
+    document.getElementById('chainModeBtn').textContent = '🔗 Generando cadena...';
+    document.getElementById('chainModeBtn').style.opacity = '0.7';
+    
+    // Guardar el mandala actual como primero de la cadena
+    chainHistory.push({
+        points: JSON.parse(JSON.stringify(currentPoints)),
+        rotation: rotationAngle
+    });
+    
+    function generateNextChainStep() {
+        if (!isChainMode) return;
+        
+        // Generar un nuevo mandala con variaciones
+        const numPoints = 40 + Math.floor(Math.random() * 40);
+        const newPoints = [];
+        
+        // Usar los colores actuales pero variar ligeramente
+        const colors = [...config.colors];
+        // Mezclar colores aleatoriamente
+        for (let i = colors.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [colors[i], colors[j]] = [colors[j], colors[i]];
+        }
+        
+        for (let i = 0; i < numPoints; i++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const distance = 0.1 + Math.random() * 0.85;
+            const radius = MAX_RADIUS * distance;
+            const x = CENTER_X + Math.cos(angle) * radius;
+            const y = CENTER_Y + Math.sin(angle) * radius;
+            const color = colors[i % colors.length];
+            const size = config.strokeSize * (0.5 + Math.random() * 0.8);
+            newPoints.push({ x, y, color, size });
+        }
+        
+        // Actualizar puntos actuales
+        currentPoints = newPoints;
+        savedImageData = null;
+        
+        // Dibujar el nuevo mandala con una rotación aleatoria
+        const randomRotation = Math.random() * 360;
+        drawMandalaFromPoints(currentPoints, randomRotation * Math.PI / 180);
+        savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Guardar en historial
+        chainHistory.push({
+            points: JSON.parse(JSON.stringify(currentPoints)),
+            rotation: randomRotation
+        });
+        
+        // Limitar historial
+        if (chainHistory.length > 50) {
+            chainHistory.shift();
+        }
+        
+        chainStep++;
+        
+        // Programar siguiente paso según la velocidad
+        const delay = Math.max(200, 2000 - chainSpeed * 90);
+        chainAnimationId = setTimeout(generateNextChainStep, delay);
+    }
+    
+    chainAnimationId = setTimeout(generateNextChainStep, 300);
+}
+
+function stopChainMode() {
+    isChainMode = false;
+    if (chainAnimationId) {
+        clearTimeout(chainAnimationId);
+        chainAnimationId = null;
+    }
+    document.getElementById('chainModeBtn').textContent = '🔗 Mandalas en cadena';
+    document.getElementById('chainModeBtn').style.opacity = '1';
+}
+
+// ============================================
+// 8. PALETAS
 // ============================================
 
 function applyPalette(paletteName) {
@@ -598,7 +701,7 @@ function applyPalette(paletteName) {
 }
 
 // ============================================
-// 8. EVENTOS DEL CANVAS
+// 9. EVENTOS DEL CANVAS
 // ============================================
 
 function getCoords(e) {
@@ -625,6 +728,7 @@ function getCoords(e) {
 function startDraw(e) {
     if (isAnimating) return;
     if (isFlowerMode) stopFlowerMode();
+    if (isChainMode) stopChainMode();
     if (isRotating) stopRotation();
     
     e.preventDefault();
@@ -671,7 +775,7 @@ canvas.addEventListener('touchmove', draw, { passive: false });
 canvas.addEventListener('touchend', stopDraw, { passive: false });
 
 // ============================================
-// 9. CONTROLES DE LA INTERFAZ
+// 10. CONTROLES DE LA INTERFAZ
 // ============================================
 
 // --- Paletas ---
@@ -688,6 +792,7 @@ document.querySelectorAll('.btn-shape').forEach(btn => {
     btn.addEventListener('click', () => {
         if (isAnimating) return;
         if (isFlowerMode) stopFlowerMode();
+        if (isChainMode) stopChainMode();
         document.querySelectorAll('.btn-shape').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         config.shape = btn.dataset.shape;
@@ -700,6 +805,7 @@ document.querySelectorAll('.btn-petal').forEach(btn => {
     btn.addEventListener('click', () => {
         if (isAnimating) return;
         if (isFlowerMode) stopFlowerMode();
+        if (isChainMode) stopChainMode();
         document.querySelectorAll('.btn-petal').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         config.petalCount = parseInt(btn.dataset.petal);
@@ -760,11 +866,31 @@ document.getElementById('toggleRotationBtn').addEventListener('click', toggleRot
 document.getElementById('flowerModeBtn').addEventListener('click', startFlowerMode);
 document.getElementById('stopFlowerBtn').addEventListener('click', () => {
     stopFlowerMode();
-    // Restaurar el mandala completo
     if (currentPoints.length > 0) {
         drawMandalaFromPoints(currentPoints, 0);
         savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     }
+});
+
+// --- Modo Cadena ---
+document.getElementById('chainModeBtn').addEventListener('click', startChainMode);
+document.getElementById('stopChainBtn').addEventListener('click', () => {
+    stopChainMode();
+    // Restaurar el último mandala de la cadena
+    if (chainHistory.length > 0) {
+        const last = chainHistory[chainHistory.length - 1];
+        currentPoints = JSON.parse(JSON.stringify(last.points));
+        drawMandalaFromPoints(currentPoints, last.rotation * Math.PI / 180);
+        savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+});
+
+// --- Velocidad de cadena ---
+const chainSpeedInput = document.getElementById('chainSpeed');
+const chainSpeedDisplay = document.getElementById('chainSpeedDisplay');
+chainSpeedInput.addEventListener('input', () => {
+    chainSpeed = parseInt(chainSpeedInput.value);
+    chainSpeedDisplay.textContent = chainSpeed;
 });
 
 // --- Botones principales ---
@@ -779,13 +905,14 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     if (isAnimating) return;
     stopRotation();
     stopFlowerMode();
+    stopChainMode();
     currentPoints = [];
     savedImageData = null;
     drawBackground();
 });
 
 // ============================================
-// 10. TEMA OSCURO/CLARO
+// 11. TEMA OSCURO/CLARO
 // ============================================
 
 function detectSystemTheme() {
@@ -845,7 +972,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 // ============================================
-// 11. INICIAR
+// 12. INICIAR
 // ============================================
 
 function init() {
@@ -853,17 +980,11 @@ function init() {
     drawBackground();
     generateMandala();
     
-    setTimeout(() => {
-        if (savedImageData && currentPoints.length > 0) {
-            // No iniciar rotación automáticamente, esperar a que el usuario active
-        }
-    }, 500);
-    
     console.log('🎨 Generador de Mandalas iniciado!');
     console.log('🎯 Forma:', config.shape);
     console.log('🌸 Pétalos:', config.petalCount);
     console.log('🎨 Paleta:', currentPalette);
-    console.log('🌺 Modo Flor:', isFlowerMode ? 'Activo' : 'Inactivo');
+    console.log('🔗 Modo Cadena:', isChainMode ? 'Activo' : 'Inactivo');
 }
 
 init();

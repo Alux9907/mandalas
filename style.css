@@ -412,6 +412,38 @@ footer {
     transition: color 0.4s ease;
 }
 
+/* ===== MODO CADENA ===== */
+#stopChainBtn {
+    display: inline-block;
+}
+
+.chain-speed-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.chain-speed-group label {
+    font-size: 0.7rem;
+    min-width: 60px;
+    color: var(--text-secondary);
+}
+
+.chain-speed-group input[type="range"] {
+    flex: 1;
+    min-width: 60px;
+}
+
+#chainSpeedDisplay {
+    color: #4ECDC4;
+    font-weight: 600;
+    font-size: 0.8rem;
+    min-width: 25px;
+    text-align: center;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
     .container {

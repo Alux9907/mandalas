@@ -92,7 +92,7 @@
                 <button id="toggleRotationBtn" class="btn-small" style="min-width:80px;">⏸️ Pausar</button>
             </div>
 
-            <!-- NUEVO: Modo Flor -->
+            <!-- Modo Flor -->
             <div class="control-group">
                 <label>🌺 Modo</label>
                 <button id="flowerModeBtn" class="btn-primary" style="flex:1; min-width:120px; padding:8px 16px; font-size:0.85rem;">
@@ -103,6 +103,22 @@
                 </button>
             </div>
 
+            <!-- NUEVO: Modo Cadena -->
+            <div class="control-group">
+                <label>🔗 Cadena</label>
+                <button id="chainModeBtn" class="btn-primary" style="flex:1; min-width:120px; padding:8px 16px; font-size:0.85rem;">
+                    🔗 Mandalas en cadena
+                </button>
+                <button id="stopChainBtn" class="btn-danger" style="flex:0.5; min-width:80px; padding:8px 16px; font-size:0.85rem;">
+                    ⏹️ Detener
+                </button>
+                <div style="display:flex; align-items:center; gap:6px; width:100%; margin-top:4px;">
+                    <label style="font-size:0.7rem; min-width:60px;">Velocidad:</label>
+                    <input type="range" id="chainSpeed" min="1" max="20" step="1" value="5" style="flex:1;">
+                    <span id="chainSpeedDisplay" style="color:#4ECDC4; font-weight:600; font-size:0.8rem; min-width:25px;">5</span>
+                </div>
+            </div>
+
             <div class="button-row">
                 <button id="regenerateBtn" class="btn-primary">🔄 Generar Mandala</button>
                 <button id="downloadBtn" class="btn-secondary">⬇️ Descargar PNG</button>
@@ -111,7 +127,7 @@
         </div>
 
         <footer>
-            <p>🎯 Toca la pantalla para dibujar | 🔄 Genera patrones únicos | 🌸 Modo Flor</p>
+            <p>🎯 Toca la pantalla para dibujar | 🔄 Genera patrones únicos | 🔗 Modo Cadena</p>
         </footer>
     </div>
 
