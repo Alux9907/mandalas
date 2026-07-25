@@ -28,7 +28,8 @@ const config = {
     innerRadius: 0.3,
     centerX: canvas.width / 2,
     centerY: canvas.height / 2,
-    maxRadius: Math.min(canvas.width, canvas.height) / 2 - 20
+    maxRadius: Math.min(canvas.width, canvas.height) / 2 - 20,
+    bgColor: '#0f0e17'
 };
 
 // Estado del dibujo
@@ -42,6 +43,7 @@ let isAnimating = false;
 let animationPoints = [];
 let animationIndex = 0;
 let animationSpeed = 50; // ms entre puntos
+let lastGeneratedPetalCount = 6;
 
 // ============================================
 // FUNCIONES DE DIBUJO
@@ -115,19 +117,32 @@ function drawPetal(x, y, radius, color, strokeSize) {
 // DIBUJAR MANDALA DE FONDO
 // ============================================
 
+function getCanvasBgColor() {
+    // Obtener el color de fondo del canvas desde CSS
+    const isLight = document.body.classList.contains('light-theme');
+    return isLight ? '#f5f0e8' : '#0f0e17';
+}
+
 function drawBackgroundMandala() {
+    const bgColor = getCanvasBgColor();
+    config.bgColor = bgColor;
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Fondo
-    ctx.fillStyle = '#0f0e17';
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Círculos concéntricos
+    const lineColor = document.body.classList.contains('light-theme') 
+        ? 'rgba(0, 0, 0, 0.06)' 
+        : 'rgba(255, 255, 255, 0.06)';
+    
     for (let r = 0.1; r <= 1; r += 0.1) {
         const radius = config.maxRadius * r;
         ctx.beginPath();
         ctx.arc(config.centerX, config.centerY, radius, 0, 2 * Math.PI);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.05 + r * 0.05})`;
+        ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
         ctx.stroke();
     }
@@ -141,7 +156,7 @@ function drawBackgroundMandala() {
             config.centerX + Math.cos(angle) * config.maxRadius,
             config.centerY + Math.sin(angle) * config.maxRadius
         );
-        ctx.strokeStyle = `rgba(255, 255, 255, 0.05)`;
+        ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
         ctx.stroke();
     }
@@ -153,7 +168,8 @@ function drawBackgroundMandala() {
 
 function generatePoints() {
     const points = [];
-    const numPoints = 30 + Math.floor(Math.random() * 50);
+    // Aumentar puntos para mejor efecto visual
+    const numPoints = 40 + Math.floor(Math.random() * 60);
     
     for (let i = 0; i < numPoints; i++) {
         const angle = Math.random() * 2 * Math.PI;
@@ -162,44 +178,13 @@ function generatePoints() {
         const x = config.centerX + Math.cos(angle) * radius;
         const y = config.centerY + Math.sin(angle) * radius;
         
-        // Calcular cuántas veces se repite este punto (para variar intensidad)
-        const repeat = 1 + Math.floor(Math.random() * 2);
         const color = config.colors[i % config.colors.length];
         const size = config.strokeSize * (0.5 + Math.random() * 0.8);
         
-        points.push({ x, y, color, size, repeat });
+        points.push({ x, y, color, size });
     }
     
     return points;
-}
-
-function drawAnimatedPoint(point, progress) {
-    // Dibujar el punto con un efecto de "desvanecimiento" progresivo
-    const angle = Math.atan2(point.y - config.centerY, point.x - config.centerX);
-    const distance = Math.sqrt((point.x - config.centerX) ** 2 + (point.y - config.centerY) ** 2);
-    const step = (2 * Math.PI) / config.petalCount;
-    
-    // Dibujar los pétalos simétricos con el progreso
-    for (let i = 0; i < config.petalCount; i++) {
-        const rotAngle = i * step;
-        const startX = config.centerX + Math.cos(angle + rotAngle) * distance * config.innerRadius;
-        const startY = config.centerY + Math.sin(angle + rotAngle) * distance * config.innerRadius;
-        const endX = config.centerX + Math.cos(angle + rotAngle) * distance * progress;
-        const endY = config.centerY + Math.sin(angle + rotAngle) * distance * progress;
-        
-        // Efecto de opacidad según el progreso
-        const opacity = Math.min(1, progress * 1.5);
-        
-        ctx.globalAlpha = opacity;
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.strokeStyle = point.color;
-        ctx.lineWidth = point.size;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
 }
 
 function animateMandala() {
@@ -212,6 +197,9 @@ function animateMandala() {
     isAnimating = true;
     regenerateBtn.disabled = true;
     regenerateBtn.textContent = '⏳ Generando...';
+    
+    // Guardar el número de pétalos actual
+    lastGeneratedPetalCount = config.petalCount;
     
     // Limpiar y dibujar fondo
     drawBackgroundMandala();
@@ -330,7 +318,7 @@ function easeOutCubic(t) {
 }
 
 // ============================================
-// GENERAR MANDALA SIN ANIMACIÓN (para uso rápido)
+// GENERAR MANDALA SIN ANIMACIÓN (para limpiar)
 // ============================================
 
 function generateRandomMandala() {
@@ -379,6 +367,25 @@ function generateRandomMandala() {
     ctx.arc(config.centerX, config.centerY, config.maxRadius * 0.05, 0, 2 * Math.PI);
     ctx.fillStyle = config.colors[0];
     ctx.fill();
+}
+
+// ============================================
+// REGENERAR CON ANIMACIÓN (con timeout para evitar conflictos)
+// ============================================
+
+function regenerateWithAnimation() {
+    if (isAnimating) return;
+    
+    // Si cambió el número de pétalos, redibujar fondo primero
+    if (lastGeneratedPetalCount !== config.petalCount) {
+        drawBackgroundMandala();
+        lastGeneratedPetalCount = config.petalCount;
+    }
+    
+    // Pequeño delay para asegurar que el fondo se actualizó
+    setTimeout(() => {
+        animateMandala();
+    }, 50);
 }
 
 // ============================================
@@ -472,7 +479,7 @@ canvas.addEventListener('touchend', stopDrawing, { passive: false });
 // CONTROLES
 // ============================================
 
-// Pétalos
+// Pétalos - AHORA REGENERA CON ANIMACIÓN
 petalButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         if (isAnimating) return;
@@ -480,6 +487,10 @@ petalButtons.forEach(btn => {
         btn.classList.add('active');
         config.petalCount = parseInt(btn.dataset.petal);
         drawBackgroundMandala();
+        // Regenerar con animación después de cambiar pétalos
+        setTimeout(() => {
+            regenerateWithAnimation();
+        }, 100);
     });
 });
 
@@ -499,6 +510,8 @@ randomColorsBtn.addEventListener('click', () => {
         colorInputs[i].value = randomColor;
     }
     config.colors = newColors;
+    // Regenerar con nuevos colores
+    regenerateWithAnimation();
 });
 
 // Tamaño de trazo
@@ -507,16 +520,18 @@ strokeSizeInput.addEventListener('input', () => {
     strokeSizeDisplay.textContent = config.strokeSize;
 });
 
-// Radio interno
+// Radio interno - REGENERA EN TIEMPO REAL
 innerRadiusInput.addEventListener('input', () => {
     config.innerRadius = parseFloat(innerRadiusInput.value);
     innerRadiusDisplay.textContent = config.innerRadius.toFixed(2);
+    // Regenerar con animación para ver el cambio
+    regenerateWithAnimation();
 });
 
 // Regenerar - CON ANIMACIÓN
 regenerateBtn.addEventListener('click', () => {
     if (isAnimating) return;
-    animateMandala();
+    regenerateWithAnimation();
 });
 
 // Descargar
@@ -531,6 +546,7 @@ downloadBtn.addEventListener('click', () => {
 clearBtn.addEventListener('click', () => {
     if (isAnimating) return;
     drawBackgroundMandala();
+    // No regenerar, dejar en blanco
 });
 
 // ============================================
@@ -566,6 +582,12 @@ function toggleTheme() {
         themeBtn.textContent = '☀️';
         localStorage.setItem('theme', 'light');
     }
+    
+    // Redibujar fondo y regenerar con el nuevo tema
+    drawBackgroundMandala();
+    setTimeout(() => {
+        regenerateWithAnimation();
+    }, 100);
 }
 
 // Cargar tema guardado
@@ -593,6 +615,10 @@ document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (!localStorage.getItem('theme')) {
         detectSystemTheme();
+        drawBackgroundMandala();
+        setTimeout(() => {
+            regenerateWithAnimation();
+        }, 100);
     }
 });
 
@@ -603,14 +629,16 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 function init() {
     loadTheme();
     drawBackgroundMandala();
+    lastGeneratedPetalCount = config.petalCount;
     
-    // Generar mandala inicial CON animación
+    // Generar mandala inicial CON animación después de que todo cargue
     setTimeout(() => {
         animateMandala();
-    }, 300);
+    }, 500);
     
     console.log('🎨 Generador de Mandalas iniciado!');
     console.log('🌙 Tema cargado:', localStorage.getItem('theme') || 'sistema');
+    console.log('🌸 Pétalos:', config.petalCount);
 }
 
 init();
