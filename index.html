@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🎨 Generador de Mandalas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Mandalas</h1>
+            <p class="subtitle">Dibuja mandalas simétricos relajantes</p>
+        </header>
+
+        <div class="canvas-wrapper">
+            <canvas id="mandalaCanvas" width="500" height="500"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>🌸 Pétalos</label>
+                <div class="btn-group">
+                    <button class="btn-petal" data-petal="4">4</button>
+                    <button class="btn-petal active" data-petal="6">6</button>
+                    <button class="btn-petal" data-petal="8">8</button>
+                    <button class="btn-petal" data-petal="10">10</button>
+                    <button class="btn-petal" data-petal="12">12</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>🎨 Colores</label>
+                <div class="color-picker-group">
+                    <input type="color" id="color1" value="#FF6B6B">
+                    <input type="color" id="color2" value="#4ECDC4">
+                    <input type="color" id="color3" value="#45B7D1">
+                    <input type="color" id="color4" value="#FFA07A">
+                    <input type="color" id="color5" value="#98D8C8">
+                </div>
+                <button id="randomColorsBtn" class="btn-small">🎲 Aleatorio</button>
+            </div>
+
+            <div class="control-group">
+                <label>✏️ Tamaño trazo</label>
+                <input type="range" id="strokeSize" min="1" max="10" value="3">
+                <span id="strokeSizeDisplay">3</span>
+            </div>
+
+            <div class="control-group">
+                <label>🔄 Radio interno</label>
+                <input type="range" id="innerRadius" min="0.1" max="0.9" step="0.05" value="0.3">
+                <span id="innerRadiusDisplay">0.3</span>
+            </div>
+
+            <div class="button-row">
+                <button id="regenerateBtn" class="btn-primary">🔄 Generar Mandala</button>
+                <button id="downloadBtn" class="btn-secondary">⬇️ Descargar PNG</button>
+                <button id="clearBtn" class="btn-danger">🗑️ Limpiar</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>🎯 Toca la pantalla para dibujar | 🔄 Genera patrones únicos</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
