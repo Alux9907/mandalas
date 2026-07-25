@@ -84,12 +84,23 @@
                 <span id="innerRadiusDisplay">0.3</span>
             </div>
 
-            <!-- NUEVO: Velocidad de rotación -->
+            <!-- Velocidad de rotación -->
             <div class="control-group">
                 <label>🌀 Rotación</label>
                 <input type="range" id="rotationSpeed" min="0" max="5" step="0.1" value="0.5">
                 <span id="rotationSpeedDisplay">0.5</span>
                 <button id="toggleRotationBtn" class="btn-small" style="min-width:80px;">⏸️ Pausar</button>
+            </div>
+
+            <!-- NUEVO: Modo Flor -->
+            <div class="control-group">
+                <label>🌺 Modo</label>
+                <button id="flowerModeBtn" class="btn-primary" style="flex:1; min-width:120px; padding:8px 16px; font-size:0.85rem;">
+                    🌸 Flor que florece
+                </button>
+                <button id="stopFlowerBtn" class="btn-danger" style="flex:0.5; min-width:80px; padding:8px 16px; font-size:0.85rem;">
+                    ⏹️ Detener
+                </button>
             </div>
 
             <div class="button-row">
@@ -100,7 +111,7 @@
         </div>
 
         <footer>
-            <p>🎯 Toca la pantalla para dibujar | 🔄 Genera patrones únicos | 🌀 Rotación continua</p>
+            <p>🎯 Toca la pantalla para dibujar | 🔄 Genera patrones únicos | 🌸 Modo Flor</p>
         </footer>
     </div>
 

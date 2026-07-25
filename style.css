@@ -300,6 +300,10 @@ body.light-theme .btn-palette[data-palette="vintage"] {
     background: var(--btn-hover);
 }
 
+#stopFlowerBtn {
+    display: inline-block;
+}
+
 input[type="range"] {
     flex: 1;
     min-width: 100px;
@@ -461,5 +465,16 @@ footer {
     .btn-palette {
         padding: 4px 8px;
         font-size: 0.65rem;
+    }
+
+    #flowerModeBtn {
+        font-size: 0.75rem !important;
+        padding: 6px 12px !important;
+    }
+
+    #stopFlowerBtn {
+        font-size: 0.75rem !important;
+        padding: 6px 12px !important;
+        min-width: 60px !important;
     }
 }

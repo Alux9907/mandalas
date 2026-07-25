@@ -1,5 +1,5 @@
 // ============================================
-// GENERADOR DE MANDALAS - CON ROTACIÓN CONTINUA
+// GENERADOR DE MANDALAS - CON FLOR QUE FLORECE
 // ============================================
 
 // ============================================
@@ -48,9 +48,21 @@ let lastY = 0;
 
 let rotationAngle = 0;
 let isRotating = false;
-let rotationSpeed = 0.5; // grados por frame
+let rotationSpeed = 0.5;
 let rotationAnimationId = null;
-let savedImageData = null; // Para guardar el mandala original
+let savedImageData = null;
+let currentPoints = [];
+
+// ============================================
+// 1.7. MODO FLOR QUE FLORECE
+// ============================================
+
+let isFlowerMode = false;
+let flowerAnimationId = null;
+let flowerProgress = 0;
+let flowerPoints = [];
+let flowerTotalPoints = 0;
+let flowerMaxRadius = 0;
 
 // ============================================
 // 2. FUNCIONES DE DIBUJO
@@ -297,13 +309,12 @@ function drawCenterDot(angleOffset = 0) {
 // 4. GENERAR MANDALA
 // ============================================
 
-let currentPoints = [];
-
 function generateMandala() {
     if (isAnimating) return;
     
-    // Detener rotación
+    // Detener rotación y modo flor
     stopRotation();
+    stopFlowerMode();
     
     drawBackground();
     
@@ -324,7 +335,6 @@ function generateMandala() {
     drawMandalaFromPoints(currentPoints, 0);
     drawCenterDot(0);
     
-    // Guardar imagen para rotación
     savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     
     const btn = document.getElementById('regenerateBtn');
@@ -332,14 +342,12 @@ function generateMandala() {
     btn.disabled = false;
     isAnimating = false;
     
-    // Reanudar rotación si estaba activa
     if (isRotating) {
         startRotation();
     }
 }
 
 function drawMandalaFromPoints(points, angleOffset) {
-    // Dibujar sobre el fondo
     drawBackground();
     
     for (const p of points) {
@@ -352,8 +360,8 @@ function drawMandalaFromPoints(points, angleOffset) {
 function generateWithAnimation() {
     if (isAnimating) return;
     
-    // Detener rotación
     stopRotation();
+    stopFlowerMode();
     
     isAnimating = true;
     
@@ -388,7 +396,6 @@ function generateWithAnimation() {
             btn.disabled = false;
             isAnimating = false;
             
-            // Reanudar rotación si estaba activa
             if (isRotating) {
                 startRotation();
             }
@@ -426,11 +433,6 @@ function startRotation() {
         
         rotationAngle = (rotationAngle + rotationSpeed) % 360;
         
-        // Restaurar imagen guardada y rotarla
-        ctx.putImageData(savedImageData, 0, 0);
-        
-        // No podemos rotar la imagen directamente, así que redibujamos con offset
-        // En su lugar, redibujamos desde los puntos guardados
         if (currentPoints.length > 0) {
             drawMandalaFromPoints(currentPoints, rotationAngle * Math.PI / 180);
         }
@@ -454,10 +456,8 @@ function toggleRotation() {
     if (isRotating) {
         stopRotation();
     } else {
-        // Si no hay imagen guardada, generar una
         if (!savedImageData || currentPoints.length === 0) {
             generateMandala();
-            // Esperar un momento para que se genere
             setTimeout(() => {
                 if (savedImageData) {
                     startRotation();
@@ -470,7 +470,109 @@ function toggleRotation() {
 }
 
 // ============================================
-// 6. PALETAS
+// 6. MODO FLOR QUE FLORECE
+// ============================================
+
+function startFlowerMode() {
+    // Detener cualquier animación previa
+    stopFlowerMode();
+    stopRotation();
+    
+    if (isAnimating) return;
+    
+    // Si no hay puntos, generar un mandala primero
+    if (currentPoints.length === 0) {
+        generateMandala();
+        // Esperar a que se genere
+        setTimeout(() => {
+            if (currentPoints.length > 0) {
+                startFlowerAnimation();
+            }
+        }, 200);
+    } else {
+        startFlowerAnimation();
+    }
+}
+
+function startFlowerAnimation() {
+    isFlowerMode = true;
+    flowerProgress = 0;
+    flowerPoints = [...currentPoints];
+    flowerTotalPoints = flowerPoints.length;
+    flowerMaxRadius = 0;
+    
+    // Calcular el radio máximo de los puntos
+    for (const p of flowerPoints) {
+        const dist = Math.sqrt((p.x - CENTER_X) ** 2 + (p.y - CENTER_Y) ** 2);
+        if (dist > flowerMaxRadius) flowerMaxRadius = dist;
+    }
+    
+    document.getElementById('flowerModeBtn').textContent = '🌸 Floreciendo...';
+    document.getElementById('flowerModeBtn').style.opacity = '0.7';
+    document.getElementById('stopFlowerBtn').style.display = 'inline-block';
+    
+    // Dibujar el fondo
+    drawBackground();
+    
+    // Animación: dibujar puntos desde el centro hacia afuera
+    function drawFlowerStep() {
+        if (!isFlowerMode) return;
+        
+        // Limpiar y dibujar fondo
+        drawBackground();
+        
+        // Calcular el radio actual basado en el progreso
+        const currentRadius = flowerMaxRadius * easeOutCubic(flowerProgress);
+        
+        // Dibujar solo los puntos que están dentro del radio actual
+        let drawnCount = 0;
+        for (const p of flowerPoints) {
+            const dist = Math.sqrt((p.x - CENTER_X) ** 2 + (p.y - CENTER_Y) ** 2);
+            if (dist <= currentRadius) {
+                drawShape(p.x, p.y, p.color, p.size, 0);
+                drawnCount++;
+            }
+        }
+        
+        // Dibujar el centro
+        drawCenterDot(0);
+        
+        // Actualizar progreso
+        flowerProgress += 0.005; // Velocidad de floración
+        
+        if (flowerProgress >= 1) {
+            // Terminar: dibujar todo el mandala
+            drawMandalaFromPoints(flowerPoints, 0);
+            document.getElementById('flowerModeBtn').textContent = '🌸 Flor completa 🌸';
+            document.getElementById('flowerModeBtn').style.opacity = '1';
+            isFlowerMode = false;
+            savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            return;
+        }
+        
+        flowerAnimationId = requestAnimationFrame(drawFlowerStep);
+    }
+    
+    flowerAnimationId = requestAnimationFrame(drawFlowerStep);
+}
+
+function stopFlowerMode() {
+    isFlowerMode = false;
+    if (flowerAnimationId) {
+        cancelAnimationFrame(flowerAnimationId);
+        flowerAnimationId = null;
+    }
+    document.getElementById('flowerModeBtn').textContent = '🌸 Flor que florece';
+    document.getElementById('flowerModeBtn').style.opacity = '1';
+    document.getElementById('stopFlowerBtn').style.display = 'inline-block';
+}
+
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+}
+
+// ============================================
+// 7. PALETAS
 // ============================================
 
 function applyPalette(paletteName) {
@@ -496,7 +598,7 @@ function applyPalette(paletteName) {
 }
 
 // ============================================
-// 7. EVENTOS DEL CANVAS
+// 8. EVENTOS DEL CANVAS
 // ============================================
 
 function getCoords(e) {
@@ -522,7 +624,7 @@ function getCoords(e) {
 
 function startDraw(e) {
     if (isAnimating) return;
-    // Pausar rotación al dibujar
+    if (isFlowerMode) stopFlowerMode();
     if (isRotating) stopRotation();
     
     e.preventDefault();
@@ -534,7 +636,6 @@ function startDraw(e) {
     const color = config.colors[Math.floor(Math.random() * config.colors.length)];
     drawShape(lastX, lastY, color, config.strokeSize, rotationAngle * Math.PI / 180);
     
-    // Actualizar imagen guardada después de dibujar
     setTimeout(() => {
         savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     }, 10);
@@ -548,13 +649,11 @@ function draw(e) {
     const color = config.colors[Math.floor(Math.random() * config.colors.length)];
     drawShape(coords.x, coords.y, color, config.strokeSize, rotationAngle * Math.PI / 180);
     
-    // Actualizar puntos guardados
     currentPoints.push({ x: coords.x, y: coords.y, color, size: config.strokeSize });
     
     lastX = coords.x;
     lastY = coords.y;
     
-    // Actualizar imagen guardada
     savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
@@ -572,7 +671,7 @@ canvas.addEventListener('touchmove', draw, { passive: false });
 canvas.addEventListener('touchend', stopDraw, { passive: false });
 
 // ============================================
-// 8. CONTROLES DE LA INTERFAZ
+// 9. CONTROLES DE LA INTERFAZ
 // ============================================
 
 // --- Paletas ---
@@ -588,6 +687,7 @@ document.querySelectorAll('.btn-palette').forEach(btn => {
 document.querySelectorAll('.btn-shape').forEach(btn => {
     btn.addEventListener('click', () => {
         if (isAnimating) return;
+        if (isFlowerMode) stopFlowerMode();
         document.querySelectorAll('.btn-shape').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         config.shape = btn.dataset.shape;
@@ -599,6 +699,7 @@ document.querySelectorAll('.btn-shape').forEach(btn => {
 document.querySelectorAll('.btn-petal').forEach(btn => {
     btn.addEventListener('click', () => {
         if (isAnimating) return;
+        if (isFlowerMode) stopFlowerMode();
         document.querySelectorAll('.btn-petal').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         config.petalCount = parseInt(btn.dataset.petal);
@@ -655,6 +756,17 @@ rotationSpeedInput.addEventListener('input', () => {
 // --- Botón de rotación ---
 document.getElementById('toggleRotationBtn').addEventListener('click', toggleRotation);
 
+// --- Modo Flor ---
+document.getElementById('flowerModeBtn').addEventListener('click', startFlowerMode);
+document.getElementById('stopFlowerBtn').addEventListener('click', () => {
+    stopFlowerMode();
+    // Restaurar el mandala completo
+    if (currentPoints.length > 0) {
+        drawMandalaFromPoints(currentPoints, 0);
+        savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+});
+
 // --- Botones principales ---
 document.getElementById('regenerateBtn').addEventListener('click', generateWithAnimation);
 document.getElementById('downloadBtn').addEventListener('click', () => {
@@ -666,13 +778,14 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
 document.getElementById('clearBtn').addEventListener('click', () => {
     if (isAnimating) return;
     stopRotation();
+    stopFlowerMode();
     currentPoints = [];
     savedImageData = null;
     drawBackground();
 });
 
 // ============================================
-// 9. TEMA OSCURO/CLARO
+// 10. TEMA OSCURO/CLARO
 // ============================================
 
 function detectSystemTheme() {
@@ -732,7 +845,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 // ============================================
-// 10. INICIAR
+// 11. INICIAR
 // ============================================
 
 function init() {
@@ -740,10 +853,9 @@ function init() {
     drawBackground();
     generateMandala();
     
-    // Iniciar rotación automáticamente después de un momento
     setTimeout(() => {
         if (savedImageData && currentPoints.length > 0) {
-            startRotation();
+            // No iniciar rotación automáticamente, esperar a que el usuario active
         }
     }, 500);
     
@@ -751,7 +863,7 @@ function init() {
     console.log('🎯 Forma:', config.shape);
     console.log('🌸 Pétalos:', config.petalCount);
     console.log('🎨 Paleta:', currentPalette);
-    console.log('🌀 Rotación:', isRotating ? 'Activa' : 'Inactiva');
+    console.log('🌺 Modo Flor:', isFlowerMode ? 'Activo' : 'Inactivo');
 }
 
 init();
