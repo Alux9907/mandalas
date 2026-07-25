@@ -5,7 +5,6 @@
 }
 
 :root {
-    /* Tema oscuro (por defecto) */
     --bg-primary: #0f0e17;
     --bg-secondary: #1a1a2e;
     --bg-card: rgba(255, 255, 255, 0.05);
@@ -18,7 +17,6 @@
     --btn-hover: rgba(255, 255, 255, 0.15);
 }
 
-/* Tema claro */
 body.light-theme {
     --bg-primary: #f5f0e8;
     --bg-secondary: #ffffff;
@@ -150,7 +148,7 @@ header h1 {
     flex-wrap: wrap;
 }
 
-.btn-petal {
+.btn-petal, .btn-shape {
     background: var(--input-bg);
     color: var(--text-secondary);
     border: 2px solid transparent;
@@ -160,17 +158,21 @@ header h1 {
     font-weight: 600;
     transition: all 0.3s;
     font-size: 0.85rem;
-    color: var(--text-secondary);
 }
 
-.btn-petal:hover {
+.btn-petal:hover, .btn-shape:hover {
     background: var(--btn-hover);
 }
 
-.btn-petal.active {
+.btn-petal.active, .btn-shape.active {
     background: #4ECDC4;
     color: #0f0e17;
     border-color: #4ECDC4;
+}
+
+.btn-shape {
+    font-size: 0.75rem;
+    padding: 6px 10px;
 }
 
 .color-picker-group {
@@ -256,8 +258,7 @@ input[type="range"]::-moz-range-thumb {
     border: none;
 }
 
-#strokeSizeDisplay,
-#innerRadiusDisplay {
+#strokeSizeDisplay, #innerRadiusDisplay {
     color: #4ECDC4;
     font-weight: 600;
     font-size: 0.9rem;
@@ -369,8 +370,8 @@ footer {
         font-size: 0.8rem;
     }
 
-    .btn-petal {
-        padding: 5px 12px;
-        font-size: 0.75rem;
+    .btn-petal, .btn-shape {
+        padding: 5px 10px;
+        font-size: 0.7rem;
     }
 }

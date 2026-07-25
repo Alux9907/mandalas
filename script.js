@@ -1,5 +1,5 @@
 // ============================================
-// GENERADOR DE MANDALAS - VERSIÓN ULTRA SIMPLE
+// GENERADOR DE MANDALAS - CON MÚLTIPLES FORMAS
 // ============================================
 
 // ============================================
@@ -17,13 +17,17 @@ let config = {
     petalCount: 6,
     colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'],
     strokeSize: 3,
-    innerRadius: 0.3
+    innerRadius: 0.3,
+    shape: 'petal' // 'petal', 'circle', 'star', 'spiral', 'drop', 'triangle'
 };
 
 let isAnimating = false;
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
 
 // ============================================
-// 2. FUNCIONES DE DIBUJO
+// 2. FUNCIONES DE DIBUJO - CADA FORMA
 // ============================================
 
 function getBgColor() {
@@ -37,13 +41,11 @@ function getLineColor() {
 }
 
 function drawBackground() {
-    // Fondo
     ctx.fillStyle = getBgColor();
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     const lineColor = getLineColor();
     
-    // Círculos concéntricos
     for (let r = 0.1; r <= 1; r += 0.1) {
         const radius = MAX_RADIUS * r;
         ctx.beginPath();
@@ -53,7 +55,6 @@ function drawBackground() {
         ctx.stroke();
     }
     
-    // Líneas radiales
     for (let i = 0; i < config.petalCount; i++) {
         const angle = (i / config.petalCount) * 2 * Math.PI;
         ctx.beginPath();
@@ -68,11 +69,11 @@ function drawBackground() {
     }
 }
 
-function drawPetal(x, y, color, size) {
+// --- FORMA: PÉTALO ---
+function drawShapePetal(x, y, color, size) {
     const dx = x - CENTER_X;
     const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
     if (distance > MAX_RADIUS || distance < 3) return;
     
     const angle = Math.atan2(dy, dx);
@@ -96,6 +97,169 @@ function drawPetal(x, y, color, size) {
     }
 }
 
+// --- FORMA: CÍRCULO ---
+function drawShapeCircle(x, y, color, size) {
+    const dx = x - CENTER_X;
+    const dy = y - CENTER_Y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > MAX_RADIUS || distance < 3) return;
+    
+    const angle = Math.atan2(dy, dx);
+    const step = (2 * Math.PI) / config.petalCount;
+    const radius = size * 2;
+    
+    for (let i = 0; i < config.petalCount; i++) {
+        const rotAngle = angle + i * step;
+        const cx = CENTER_X + Math.cos(rotAngle) * distance;
+        const cy = CENTER_Y + Math.sin(rotAngle) * distance;
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+        ctx.stroke();
+    }
+}
+
+// --- FORMA: ESTRELLA ---
+function drawShapeStar(x, y, color, size) {
+    const dx = x - CENTER_X;
+    const dy = y - CENTER_Y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > MAX_RADIUS || distance < 3) return;
+    
+    const angle = Math.atan2(dy, dx);
+    const step = (2 * Math.PI) / config.petalCount;
+    const starSize = size * 3;
+    const points = 5;
+    
+    for (let i = 0; i < config.petalCount; i++) {
+        const rotAngle = angle + i * step;
+        const cx = CENTER_X + Math.cos(rotAngle) * distance;
+        const cy = CENTER_Y + Math.sin(rotAngle) * distance;
+        
+        ctx.beginPath();
+        for (let j = 0; j < points * 2; j++) {
+            const r = j % 2 === 0 ? starSize : starSize * 0.4;
+            const a = (j / (points * 2)) * 2 * Math.PI - Math.PI / 2;
+            const px = cx + Math.cos(a) * r;
+            const py = cy + Math.sin(a) * r;
+            if (j === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+        ctx.stroke();
+    }
+}
+
+// --- FORMA: ESPIRAL ---
+function drawShapeSpiral(x, y, color, size) {
+    const dx = x - CENTER_X;
+    const dy = y - CENTER_Y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > MAX_RADIUS || distance < 3) return;
+    
+    const angle = Math.atan2(dy, dx);
+    const step = (2 * Math.PI) / config.petalCount;
+    const turns = 3;
+    const maxR = size * 2;
+    
+    for (let i = 0; i < config.petalCount; i++) {
+        const rotAngle = angle + i * step;
+        const cx = CENTER_X + Math.cos(rotAngle) * distance;
+        const cy = CENTER_Y + Math.sin(rotAngle) * distance;
+        
+        ctx.beginPath();
+        for (let t = 0; t <= 1; t += 0.02) {
+            const r = t * maxR;
+            const a = t * turns * 2 * Math.PI;
+            const px = cx + Math.cos(a) * r;
+            const py = cy + Math.sin(a) * r;
+            if (t === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+        ctx.stroke();
+    }
+}
+
+// --- FORMA: GOTA ---
+function drawShapeDrop(x, y, color, size) {
+    const dx = x - CENTER_X;
+    const dy = y - CENTER_Y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > MAX_RADIUS || distance < 3) return;
+    
+    const angle = Math.atan2(dy, dx);
+    const step = (2 * Math.PI) / config.petalCount;
+    const dropSize = size * 2.5;
+    
+    for (let i = 0; i < config.petalCount; i++) {
+        const rotAngle = angle + i * step;
+        const cx = CENTER_X + Math.cos(rotAngle) * distance;
+        const cy = CENTER_Y + Math.sin(rotAngle) * distance;
+        
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - dropSize);
+        ctx.quadraticCurveTo(cx + dropSize, cy + dropSize * 0.3, cx, cy + dropSize);
+        ctx.quadraticCurveTo(cx - dropSize, cy + dropSize * 0.3, cx, cy - dropSize);
+        ctx.closePath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+        ctx.stroke();
+    }
+}
+
+// --- FORMA: TRIÁNGULO ---
+function drawShapeTriangle(x, y, color, size) {
+    const dx = x - CENTER_X;
+    const dy = y - CENTER_Y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > MAX_RADIUS || distance < 3) return;
+    
+    const angle = Math.atan2(dy, dx);
+    const step = (2 * Math.PI) / config.petalCount;
+    const triSize = size * 3;
+    
+    for (let i = 0; i < config.petalCount; i++) {
+        const rotAngle = angle + i * step;
+        const cx = CENTER_X + Math.cos(rotAngle) * distance;
+        const cy = CENTER_Y + Math.sin(rotAngle) * distance;
+        
+        ctx.beginPath();
+        for (let j = 0; j < 3; j++) {
+            const a = (j / 3) * 2 * Math.PI - Math.PI / 2;
+            const px = cx + Math.cos(a) * triSize;
+            const py = cy + Math.sin(a) * triSize;
+            if (j === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+        ctx.stroke();
+    }
+}
+
+// ============================================
+// 3. DISPATCHER DE FORMAS
+// ============================================
+
+function drawShape(x, y, color, size) {
+    switch (config.shape) {
+        case 'petal': drawShapePetal(x, y, color, size); break;
+        case 'circle': drawShapeCircle(x, y, color, size); break;
+        case 'star': drawShapeStar(x, y, color, size); break;
+        case 'spiral': drawShapeSpiral(x, y, color, size); break;
+        case 'drop': drawShapeDrop(x, y, color, size); break;
+        case 'triangle': drawShapeTriangle(x, y, color, size); break;
+        default: drawShapePetal(x, y, color, size);
+    }
+}
+
 function drawCenterDot() {
     ctx.beginPath();
     ctx.arc(CENTER_X, CENTER_Y, MAX_RADIUS * 0.04, 0, 2 * Math.PI);
@@ -104,17 +268,14 @@ function drawCenterDot() {
 }
 
 // ============================================
-// 3. GENERAR MANDALA (SIN ANIMACIÓN)
+// 4. GENERAR MANDALA
 // ============================================
 
 function generateMandala() {
-    // Evitar múltiples generaciones simultáneas
     if (isAnimating) return;
     
-    // Dibujar fondo
     drawBackground();
     
-    // Generar puntos
     const numPoints = 50 + Math.floor(Math.random() * 50);
     const points = [];
     
@@ -129,24 +290,17 @@ function generateMandala() {
         points.push({ x, y, color, size });
     }
     
-    // Dibujar todos los puntos (rápido, sin animación)
     for (const p of points) {
-        drawPetal(p.x, p.y, p.color, p.size);
+        drawShape(p.x, p.y, p.color, p.size);
     }
     
-    // Círculo central
     drawCenterDot();
     
-    // Actualizar botón
     const btn = document.getElementById('regenerateBtn');
     btn.textContent = '🔄 Generar Mandala';
     btn.disabled = false;
     isAnimating = false;
 }
-
-// ============================================
-// 4. GENERAR CON ANIMACIÓN (MÁS LENTA)
-// ============================================
 
 function generateWithAnimation() {
     if (isAnimating) return;
@@ -158,7 +312,6 @@ function generateWithAnimation() {
     
     drawBackground();
     
-    // Generar puntos
     const numPoints = 50 + Math.floor(Math.random() * 50);
     const points = [];
     
@@ -184,14 +337,12 @@ function generateWithAnimation() {
             return;
         }
         
-        // Dibujar de a 2 puntos por vez para velocidad
         for (let i = 0; i < 2 && index < points.length; i++) {
             const p = points[index];
-            drawPetal(p.x, p.y, p.color, p.size);
+            drawShape(p.x, p.y, p.color, p.size);
             index++;
         }
         
-        // Velocidad de animación (más alto = más rápido)
         setTimeout(drawNext, 30);
     }
     
@@ -199,12 +350,8 @@ function generateWithAnimation() {
 }
 
 // ============================================
-// 5. EVENTOS DEL CANVAS (DIBUJO MANUAL)
+// 5. EVENTOS DEL CANVAS
 // ============================================
-
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
 
 function getCoords(e) {
     const rect = canvas.getBoundingClientRect();
@@ -236,7 +383,7 @@ function startDraw(e) {
     lastY = coords.y;
     
     const color = config.colors[Math.floor(Math.random() * config.colors.length)];
-    drawPetal(lastX, lastY, color, config.strokeSize);
+    drawShape(lastX, lastY, color, config.strokeSize);
 }
 
 function draw(e) {
@@ -245,7 +392,7 @@ function draw(e) {
     
     const coords = getCoords(e);
     const color = config.colors[Math.floor(Math.random() * config.colors.length)];
-    drawPetal(coords.x, coords.y, color, config.strokeSize);
+    drawShape(coords.x, coords.y, color, config.strokeSize);
     
     lastX = coords.x;
     lastY = coords.y;
@@ -255,7 +402,6 @@ function stopDraw(e) {
     isDrawing = false;
 }
 
-// Eventos
 canvas.addEventListener('mousedown', startDraw);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDraw);
@@ -269,7 +415,18 @@ canvas.addEventListener('touchend', stopDraw, { passive: false });
 // 6. CONTROLES DE LA INTERFAZ
 // ============================================
 
-// Pétalos
+// --- Formas ---
+document.querySelectorAll('.btn-shape').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (isAnimating) return;
+        document.querySelectorAll('.btn-shape').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        config.shape = btn.dataset.shape;
+        generateMandala();
+    });
+});
+
+// --- Pétalos ---
 document.querySelectorAll('.btn-petal').forEach(btn => {
     btn.addEventListener('click', () => {
         if (isAnimating) return;
@@ -280,7 +437,7 @@ document.querySelectorAll('.btn-petal').forEach(btn => {
     });
 });
 
-// Colores
+// --- Colores ---
 document.querySelectorAll('.color-picker-group input[type="color"]').forEach((input, index) => {
     input.addEventListener('input', () => {
         config.colors[index] = input.value;
@@ -288,7 +445,7 @@ document.querySelectorAll('.color-picker-group input[type="color"]').forEach((in
     });
 });
 
-// Colores aleatorios
+// --- Colores aleatorios ---
 document.getElementById('randomColorsBtn').addEventListener('click', () => {
     const inputs = document.querySelectorAll('.color-picker-group input[type="color"]');
     for (let i = 0; i < inputs.length; i++) {
@@ -299,7 +456,7 @@ document.getElementById('randomColorsBtn').addEventListener('click', () => {
     if (!isAnimating) generateMandala();
 });
 
-// Tamaño de trazo
+// --- Tamaño trazo ---
 const strokeInput = document.getElementById('strokeSize');
 const strokeDisplay = document.getElementById('strokeSizeDisplay');
 strokeInput.addEventListener('input', () => {
@@ -308,7 +465,7 @@ strokeInput.addEventListener('input', () => {
     if (!isAnimating) generateMandala();
 });
 
-// Radio interno
+// --- Radio interno ---
 const radiusInput = document.getElementById('innerRadius');
 const radiusDisplay = document.getElementById('innerRadiusDisplay');
 radiusInput.addEventListener('input', () => {
@@ -317,7 +474,7 @@ radiusInput.addEventListener('input', () => {
     if (!isAnimating) generateMandala();
 });
 
-// Botones principales
+// --- Botones principales ---
 document.getElementById('regenerateBtn').addEventListener('click', generateWithAnimation);
 document.getElementById('downloadBtn').addEventListener('click', () => {
     const link = document.createElement('a');
@@ -399,5 +556,6 @@ drawBackground();
 generateMandala();
 
 console.log('🎨 Generador de Mandalas iniciado!');
+console.log('🎯 Forma:', config.shape);
 console.log('🌸 Pétalos:', config.petalCount);
 console.log('🎨 Colores:', config.colors);
