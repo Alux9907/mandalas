@@ -1,5 +1,5 @@
 // ============================================
-// GENERADOR DE MANDALAS - CON MÚLTIPLES FORMAS
+// GENERADOR DE MANDALAS - CON PALETAS Y FORMAS
 // ============================================
 
 // ============================================
@@ -13,21 +13,37 @@ const CENTER_X = canvas.width / 2;
 const CENTER_Y = canvas.height / 2;
 const MAX_RADIUS = Math.min(canvas.width, canvas.height) / 2 - 20;
 
-let config = {
-    petalCount: 6,
-    colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'],
-    strokeSize: 3,
-    innerRadius: 0.3,
-    shape: 'petal' // 'petal', 'circle', 'star', 'spiral', 'drop', 'triangle'
+// ============================================
+// 1.5. PALETAS DE COLORES
+// ============================================
+
+const PALETTES = {
+    default: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'],
+    sunset: ['#FF6B35', '#F7931E', '#FFB347', '#FFD93D', '#FF6B35'],
+    forest: ['#2D6A4F', '#40916C', '#52B788', '#95D5B2', '#D8F3DC'],
+    ocean: ['#0077B6', '#00B4D8', '#90E0EF', '#CAF0F8', '#0077B6'],
+    pastel: ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF'],
+    mono: ['#333333', '#666666', '#999999', '#CCCCCC', '#333333'],
+    neon: ['#FF00FF', '#00FFFF', '#FF0000', '#00FF00', '#FF00FF'],
+    vintage: ['#8B6B4A', '#C4A882', '#D4B896', '#E8D5C4', '#8B6B4A']
 };
 
+let config = {
+    petalCount: 6,
+    colors: [...PALETTES.default],
+    strokeSize: 3,
+    innerRadius: 0.3,
+    shape: 'petal'
+};
+
+let currentPalette = 'default';
 let isAnimating = false;
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
 // ============================================
-// 2. FUNCIONES DE DIBUJO - CADA FORMA
+// 2. FUNCIONES DE DIBUJO
 // ============================================
 
 function getBgColor() {
@@ -350,7 +366,33 @@ function generateWithAnimation() {
 }
 
 // ============================================
-// 5. EVENTOS DEL CANVAS
+// 5. PALETAS
+// ============================================
+
+function applyPalette(paletteName) {
+    const colors = PALETTES[paletteName];
+    if (!colors) return;
+    
+    config.colors = [...colors];
+    
+    const inputs = document.querySelectorAll('.color-picker-group input[type="color"]');
+    inputs.forEach((input, index) => {
+        if (index < colors.length) {
+            input.value = colors[index];
+        }
+    });
+    
+    document.querySelectorAll('.btn-palette').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.palette === paletteName);
+    });
+    
+    currentPalette = paletteName;
+    
+    if (!isAnimating) generateMandala();
+}
+
+// ============================================
+// 6. EVENTOS DEL CANVAS
 // ============================================
 
 function getCoords(e) {
@@ -412,8 +454,17 @@ canvas.addEventListener('touchmove', draw, { passive: false });
 canvas.addEventListener('touchend', stopDraw, { passive: false });
 
 // ============================================
-// 6. CONTROLES DE LA INTERFAZ
+// 7. CONTROLES DE LA INTERFAZ
 // ============================================
+
+// --- Paletas ---
+document.querySelectorAll('.btn-palette').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (isAnimating) return;
+        const palette = btn.dataset.palette;
+        applyPalette(palette);
+    });
+});
 
 // --- Formas ---
 document.querySelectorAll('.btn-shape').forEach(btn => {
@@ -453,6 +504,8 @@ document.getElementById('randomColorsBtn').addEventListener('click', () => {
         inputs[i].value = randomColor;
         config.colors[i] = randomColor;
     }
+    // Desactivar paleta activa
+    document.querySelectorAll('.btn-palette').forEach(b => b.classList.remove('active'));
     if (!isAnimating) generateMandala();
 });
 
@@ -488,7 +541,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 
 // ============================================
-// 7. TEMA OSCURO/CLARO
+// 8. TEMA OSCURO/CLARO
 // ============================================
 
 function detectSystemTheme() {
@@ -548,14 +601,15 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 // ============================================
-// 8. INICIAR
+// 9. INICIAR
 // ============================================
 
 loadTheme();
 drawBackground();
-generateMandala();
+applyPalette('default');
 
 console.log('🎨 Generador de Mandalas iniciado!');
 console.log('🎯 Forma:', config.shape);
 console.log('🌸 Pétalos:', config.petalCount);
+console.log('🎨 Paleta:', currentPalette);
 console.log('🎨 Colores:', config.colors);
