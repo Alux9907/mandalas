@@ -21,7 +21,7 @@
         </div>
 
         <div class="controls">
-            <!-- NUEVO: Selector de formas -->
+            <!-- Selector de formas -->
             <div class="control-group">
                 <label>🎯 Forma</label>
                 <div class="btn-group shape-group">
@@ -34,7 +34,7 @@
                 </div>
             </div>
 
-            <!-- NUEVO: Paletas de colores -->
+            <!-- Paletas de colores -->
             <div class="control-group">
                 <label>🎨 Paleta</label>
                 <div class="palette-group">
@@ -84,6 +84,14 @@
                 <span id="innerRadiusDisplay">0.3</span>
             </div>
 
+            <!-- NUEVO: Velocidad de rotación -->
+            <div class="control-group">
+                <label>🌀 Rotación</label>
+                <input type="range" id="rotationSpeed" min="0" max="5" step="0.1" value="0.5">
+                <span id="rotationSpeedDisplay">0.5</span>
+                <button id="toggleRotationBtn" class="btn-small" style="min-width:80px;">⏸️ Pausar</button>
+            </div>
+
             <div class="button-row">
                 <button id="regenerateBtn" class="btn-primary">🔄 Generar Mandala</button>
                 <button id="downloadBtn" class="btn-secondary">⬇️ Descargar PNG</button>
@@ -92,7 +100,7 @@
         </div>
 
         <footer>
-            <p>🎯 Toca la pantalla para dibujar | 🔄 Genera patrones únicos</p>
+            <p>🎯 Toca la pantalla para dibujar | 🔄 Genera patrones únicos | 🌀 Rotación continua</p>
         </footer>
     </div>
 

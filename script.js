@@ -1,5 +1,5 @@
 // ============================================
-// GENERADOR DE MANDALAS - CON PALETAS Y FORMAS
+// GENERADOR DE MANDALAS - CON ROTACIÓN CONTINUA
 // ============================================
 
 // ============================================
@@ -41,6 +41,16 @@ let isAnimating = false;
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
+
+// ============================================
+// 1.6. ROTACIÓN CONTINUA
+// ============================================
+
+let rotationAngle = 0;
+let isRotating = false;
+let rotationSpeed = 0.5; // grados por frame
+let rotationAnimationId = null;
+let savedImageData = null; // Para guardar el mandala original
 
 // ============================================
 // 2. FUNCIONES DE DIBUJO
@@ -86,13 +96,13 @@ function drawBackground() {
 }
 
 // --- FORMA: PÉTALO ---
-function drawShapePetal(x, y, color, size) {
+function drawShapePetal(x, y, color, size, angleOffset = 0) {
     const dx = x - CENTER_X;
     const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > MAX_RADIUS || distance < 3) return;
     
-    const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(dy, dx) + angleOffset;
     const step = (2 * Math.PI) / config.petalCount;
     const innerDist = distance * config.innerRadius;
     
@@ -114,13 +124,13 @@ function drawShapePetal(x, y, color, size) {
 }
 
 // --- FORMA: CÍRCULO ---
-function drawShapeCircle(x, y, color, size) {
+function drawShapeCircle(x, y, color, size, angleOffset = 0) {
     const dx = x - CENTER_X;
     const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > MAX_RADIUS || distance < 3) return;
     
-    const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(dy, dx) + angleOffset;
     const step = (2 * Math.PI) / config.petalCount;
     const radius = size * 2;
     
@@ -138,13 +148,13 @@ function drawShapeCircle(x, y, color, size) {
 }
 
 // --- FORMA: ESTRELLA ---
-function drawShapeStar(x, y, color, size) {
+function drawShapeStar(x, y, color, size, angleOffset = 0) {
     const dx = x - CENTER_X;
     const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > MAX_RADIUS || distance < 3) return;
     
-    const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(dy, dx) + angleOffset;
     const step = (2 * Math.PI) / config.petalCount;
     const starSize = size * 3;
     const points = 5;
@@ -171,13 +181,13 @@ function drawShapeStar(x, y, color, size) {
 }
 
 // --- FORMA: ESPIRAL ---
-function drawShapeSpiral(x, y, color, size) {
+function drawShapeSpiral(x, y, color, size, angleOffset = 0) {
     const dx = x - CENTER_X;
     const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > MAX_RADIUS || distance < 3) return;
     
-    const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(dy, dx) + angleOffset;
     const step = (2 * Math.PI) / config.petalCount;
     const turns = 3;
     const maxR = size * 2;
@@ -203,13 +213,13 @@ function drawShapeSpiral(x, y, color, size) {
 }
 
 // --- FORMA: GOTA ---
-function drawShapeDrop(x, y, color, size) {
+function drawShapeDrop(x, y, color, size, angleOffset = 0) {
     const dx = x - CENTER_X;
     const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > MAX_RADIUS || distance < 3) return;
     
-    const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(dy, dx) + angleOffset;
     const step = (2 * Math.PI) / config.petalCount;
     const dropSize = size * 2.5;
     
@@ -230,13 +240,13 @@ function drawShapeDrop(x, y, color, size) {
 }
 
 // --- FORMA: TRIÁNGULO ---
-function drawShapeTriangle(x, y, color, size) {
+function drawShapeTriangle(x, y, color, size, angleOffset = 0) {
     const dx = x - CENTER_X;
     const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > MAX_RADIUS || distance < 3) return;
     
-    const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(dy, dx) + angleOffset;
     const step = (2 * Math.PI) / config.petalCount;
     const triSize = size * 3;
     
@@ -264,19 +274,19 @@ function drawShapeTriangle(x, y, color, size) {
 // 3. DISPATCHER DE FORMAS
 // ============================================
 
-function drawShape(x, y, color, size) {
+function drawShape(x, y, color, size, angleOffset = 0) {
     switch (config.shape) {
-        case 'petal': drawShapePetal(x, y, color, size); break;
-        case 'circle': drawShapeCircle(x, y, color, size); break;
-        case 'star': drawShapeStar(x, y, color, size); break;
-        case 'spiral': drawShapeSpiral(x, y, color, size); break;
-        case 'drop': drawShapeDrop(x, y, color, size); break;
-        case 'triangle': drawShapeTriangle(x, y, color, size); break;
-        default: drawShapePetal(x, y, color, size);
+        case 'petal': drawShapePetal(x, y, color, size, angleOffset); break;
+        case 'circle': drawShapeCircle(x, y, color, size, angleOffset); break;
+        case 'star': drawShapeStar(x, y, color, size, angleOffset); break;
+        case 'spiral': drawShapeSpiral(x, y, color, size, angleOffset); break;
+        case 'drop': drawShapeDrop(x, y, color, size, angleOffset); break;
+        case 'triangle': drawShapeTriangle(x, y, color, size, angleOffset); break;
+        default: drawShapePetal(x, y, color, size, angleOffset);
     }
 }
 
-function drawCenterDot() {
+function drawCenterDot(angleOffset = 0) {
     ctx.beginPath();
     ctx.arc(CENTER_X, CENTER_Y, MAX_RADIUS * 0.04, 0, 2 * Math.PI);
     ctx.fillStyle = config.colors[0];
@@ -287,13 +297,18 @@ function drawCenterDot() {
 // 4. GENERAR MANDALA
 // ============================================
 
+let currentPoints = [];
+
 function generateMandala() {
     if (isAnimating) return;
+    
+    // Detener rotación
+    stopRotation();
     
     drawBackground();
     
     const numPoints = 50 + Math.floor(Math.random() * 50);
-    const points = [];
+    currentPoints = [];
     
     for (let i = 0; i < numPoints; i++) {
         const angle = Math.random() * 2 * Math.PI;
@@ -303,23 +318,43 @@ function generateMandala() {
         const y = CENTER_Y + Math.sin(angle) * radius;
         const color = config.colors[i % config.colors.length];
         const size = config.strokeSize * (0.5 + Math.random() * 0.8);
-        points.push({ x, y, color, size });
+        currentPoints.push({ x, y, color, size });
     }
     
-    for (const p of points) {
-        drawShape(p.x, p.y, p.color, p.size);
-    }
+    drawMandalaFromPoints(currentPoints, 0);
+    drawCenterDot(0);
     
-    drawCenterDot();
+    // Guardar imagen para rotación
+    savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     
     const btn = document.getElementById('regenerateBtn');
     btn.textContent = '🔄 Generar Mandala';
     btn.disabled = false;
     isAnimating = false;
+    
+    // Reanudar rotación si estaba activa
+    if (isRotating) {
+        startRotation();
+    }
+}
+
+function drawMandalaFromPoints(points, angleOffset) {
+    // Dibujar sobre el fondo
+    drawBackground();
+    
+    for (const p of points) {
+        drawShape(p.x, p.y, p.color, p.size, angleOffset);
+    }
+    
+    drawCenterDot(angleOffset);
 }
 
 function generateWithAnimation() {
     if (isAnimating) return;
+    
+    // Detener rotación
+    stopRotation();
+    
     isAnimating = true;
     
     const btn = document.getElementById('regenerateBtn');
@@ -346,16 +381,23 @@ function generateWithAnimation() {
     
     function drawNext() {
         if (index >= points.length) {
-            drawCenterDot();
+            currentPoints = points;
+            drawCenterDot(0);
+            savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             btn.textContent = '🔄 Generar Mandala';
             btn.disabled = false;
             isAnimating = false;
+            
+            // Reanudar rotación si estaba activa
+            if (isRotating) {
+                startRotation();
+            }
             return;
         }
         
         for (let i = 0; i < 2 && index < points.length; i++) {
             const p = points[index];
-            drawShape(p.x, p.y, p.color, p.size);
+            drawShape(p.x, p.y, p.color, p.size, 0);
             index++;
         }
         
@@ -366,7 +408,69 @@ function generateWithAnimation() {
 }
 
 // ============================================
-// 5. PALETAS
+// 5. ROTACIÓN CONTINUA
+// ============================================
+
+function startRotation() {
+    if (rotationAnimationId) {
+        cancelAnimationFrame(rotationAnimationId);
+        rotationAnimationId = null;
+    }
+    
+    if (!savedImageData) return;
+    isRotating = true;
+    document.getElementById('toggleRotationBtn').textContent = '⏸️ Pausar';
+    
+    function rotateStep() {
+        if (!isRotating) return;
+        
+        rotationAngle = (rotationAngle + rotationSpeed) % 360;
+        
+        // Restaurar imagen guardada y rotarla
+        ctx.putImageData(savedImageData, 0, 0);
+        
+        // No podemos rotar la imagen directamente, así que redibujamos con offset
+        // En su lugar, redibujamos desde los puntos guardados
+        if (currentPoints.length > 0) {
+            drawMandalaFromPoints(currentPoints, rotationAngle * Math.PI / 180);
+        }
+        
+        rotationAnimationId = requestAnimationFrame(rotateStep);
+    }
+    
+    rotateStep();
+}
+
+function stopRotation() {
+    isRotating = false;
+    if (rotationAnimationId) {
+        cancelAnimationFrame(rotationAnimationId);
+        rotationAnimationId = null;
+    }
+    document.getElementById('toggleRotationBtn').textContent = '▶️ Reanudar';
+}
+
+function toggleRotation() {
+    if (isRotating) {
+        stopRotation();
+    } else {
+        // Si no hay imagen guardada, generar una
+        if (!savedImageData || currentPoints.length === 0) {
+            generateMandala();
+            // Esperar un momento para que se genere
+            setTimeout(() => {
+                if (savedImageData) {
+                    startRotation();
+                }
+            }, 100);
+        } else {
+            startRotation();
+        }
+    }
+}
+
+// ============================================
+// 6. PALETAS
 // ============================================
 
 function applyPalette(paletteName) {
@@ -392,7 +496,7 @@ function applyPalette(paletteName) {
 }
 
 // ============================================
-// 6. EVENTOS DEL CANVAS
+// 7. EVENTOS DEL CANVAS
 // ============================================
 
 function getCoords(e) {
@@ -418,6 +522,9 @@ function getCoords(e) {
 
 function startDraw(e) {
     if (isAnimating) return;
+    // Pausar rotación al dibujar
+    if (isRotating) stopRotation();
+    
     e.preventDefault();
     isDrawing = true;
     const coords = getCoords(e);
@@ -425,7 +532,12 @@ function startDraw(e) {
     lastY = coords.y;
     
     const color = config.colors[Math.floor(Math.random() * config.colors.length)];
-    drawShape(lastX, lastY, color, config.strokeSize);
+    drawShape(lastX, lastY, color, config.strokeSize, rotationAngle * Math.PI / 180);
+    
+    // Actualizar imagen guardada después de dibujar
+    setTimeout(() => {
+        savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }, 10);
 }
 
 function draw(e) {
@@ -434,10 +546,16 @@ function draw(e) {
     
     const coords = getCoords(e);
     const color = config.colors[Math.floor(Math.random() * config.colors.length)];
-    drawShape(coords.x, coords.y, color, config.strokeSize);
+    drawShape(coords.x, coords.y, color, config.strokeSize, rotationAngle * Math.PI / 180);
+    
+    // Actualizar puntos guardados
+    currentPoints.push({ x: coords.x, y: coords.y, color, size: config.strokeSize });
     
     lastX = coords.x;
     lastY = coords.y;
+    
+    // Actualizar imagen guardada
+    savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
 function stopDraw(e) {
@@ -454,7 +572,7 @@ canvas.addEventListener('touchmove', draw, { passive: false });
 canvas.addEventListener('touchend', stopDraw, { passive: false });
 
 // ============================================
-// 7. CONTROLES DE LA INTERFAZ
+// 8. CONTROLES DE LA INTERFAZ
 // ============================================
 
 // --- Paletas ---
@@ -504,7 +622,6 @@ document.getElementById('randomColorsBtn').addEventListener('click', () => {
         inputs[i].value = randomColor;
         config.colors[i] = randomColor;
     }
-    // Desactivar paleta activa
     document.querySelectorAll('.btn-palette').forEach(b => b.classList.remove('active'));
     if (!isAnimating) generateMandala();
 });
@@ -527,6 +644,17 @@ radiusInput.addEventListener('input', () => {
     if (!isAnimating) generateMandala();
 });
 
+// --- Velocidad de rotación ---
+const rotationSpeedInput = document.getElementById('rotationSpeed');
+const rotationSpeedDisplay = document.getElementById('rotationSpeedDisplay');
+rotationSpeedInput.addEventListener('input', () => {
+    rotationSpeed = parseFloat(rotationSpeedInput.value);
+    rotationSpeedDisplay.textContent = rotationSpeed.toFixed(1);
+});
+
+// --- Botón de rotación ---
+document.getElementById('toggleRotationBtn').addEventListener('click', toggleRotation);
+
 // --- Botones principales ---
 document.getElementById('regenerateBtn').addEventListener('click', generateWithAnimation);
 document.getElementById('downloadBtn').addEventListener('click', () => {
@@ -537,11 +665,14 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
 });
 document.getElementById('clearBtn').addEventListener('click', () => {
     if (isAnimating) return;
+    stopRotation();
+    currentPoints = [];
+    savedImageData = null;
     drawBackground();
 });
 
 // ============================================
-// 8. TEMA OSCURO/CLARO
+// 9. TEMA OSCURO/CLARO
 // ============================================
 
 function detectSystemTheme() {
@@ -601,15 +732,26 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 // ============================================
-// 9. INICIAR
+// 10. INICIAR
 // ============================================
 
-loadTheme();
-drawBackground();
-applyPalette('default');
+function init() {
+    loadTheme();
+    drawBackground();
+    generateMandala();
+    
+    // Iniciar rotación automáticamente después de un momento
+    setTimeout(() => {
+        if (savedImageData && currentPoints.length > 0) {
+            startRotation();
+        }
+    }, 500);
+    
+    console.log('🎨 Generador de Mandalas iniciado!');
+    console.log('🎯 Forma:', config.shape);
+    console.log('🌸 Pétalos:', config.petalCount);
+    console.log('🎨 Paleta:', currentPalette);
+    console.log('🌀 Rotación:', isRotating ? 'Activa' : 'Inactiva');
+}
 
-console.log('🎨 Generador de Mandalas iniciado!');
-console.log('🎯 Forma:', config.shape);
-console.log('🌸 Pétalos:', config.petalCount);
-console.log('🎨 Paleta:', currentPalette);
-console.log('🎨 Colores:', config.colors);
+init();
