@@ -354,6 +354,101 @@ clearBtn.addEventListener('click', () => {
 });
 
 // ============================================
+// MODO OSCURO/CLARO
+// ============================================
+
+// Detectar preferencia del sistema
+function detectSystemTheme() {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const isDark = prefersDark.matches;
+    const themeBtn = document.getElementById('themeToggle');
+    
+    if (isDark) {
+        document.body.classList.remove('light-theme');
+        themeBtn.textContent = '🌙';
+    } else {
+        document.body.classList.add('light-theme');
+        themeBtn.textContent = '☀️';
+    }
+}
+
+// Alternar tema
+function toggleTheme() {
+    const themeBtn = document.getElementById('themeToggle');
+    const isLight = document.body.classList.contains('light-theme');
+    
+    if (isLight) {
+        document.body.classList.remove('light-theme');
+        themeBtn.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.body.classList.add('light-theme');
+        themeBtn.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+// Cargar tema guardado
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeBtn = document.getElementById('themeToggle');
+    
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        themeBtn.textContent = '☀️';
+    } else if (savedTheme === 'dark') {
+        document.body.classList.remove('light-theme');
+        themeBtn.textContent = '🌙';
+    } else {
+        // Si no hay tema guardado, usar el del sistema
+        detectSystemTheme();
+    }
+}
+
+// ============================================
+// EVENTOS DEL TEMA
+// ============================================
+
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+// Escuchar cambios en el tema del sistema
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!localStorage.getItem('theme')) {
+        detectSystemTheme();
+    }
+});
+
+// ============================================
+// AL INICIALIZAR
+// ============================================
+
+// Cargar tema después de init
+// Reemplaza el init actual con esto:
+
+// ============================================
+// INICIALIZAR (VERSIÓN FINAL)
+// ============================================
+
+function init() {
+    // Cargar tema
+    loadTheme();
+    
+    // Dibujar mandala de fondo
+    drawBackgroundMandala();
+    generateRandomMandala();
+    
+    console.log('🎨 Generador de Mandalas iniciado!');
+    console.log('🌙 Tema cargado:', localStorage.getItem('theme') || 'sistema');
+}
+
+// Eliminar las llamadas anteriores y usar esta
+// drawBackgroundMandala();
+// generateRandomMandala();
+
+init();
+
+
+// ============================================
 // INICIALIZAR
 // ============================================
 
