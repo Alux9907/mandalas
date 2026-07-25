@@ -1,70 +1,53 @@
 // ============================================
-// GENERADOR DE MANDALAS - VERSIÓN SIMPLIFICADA
+// GENERADOR DE MANDALAS - VERSIÓN ULTRA SIMPLE
 // ============================================
 
-// Elementos del DOM
+// ============================================
+// 1. CONFIGURACIÓN
+// ============================================
+
 const canvas = document.getElementById('mandalaCanvas');
 const ctx = canvas.getContext('2d');
 
-// Controles
-const petalButtons = document.querySelectorAll('.btn-petal');
-const colorInputs = document.querySelectorAll('.color-picker-group input[type="color"]');
-const randomColorsBtn = document.getElementById('randomColorsBtn');
-const strokeSizeInput = document.getElementById('strokeSize');
-const strokeSizeDisplay = document.getElementById('strokeSizeDisplay');
-const innerRadiusInput = document.getElementById('innerRadius');
-const innerRadiusDisplay = document.getElementById('innerRadiusDisplay');
-const regenerateBtn = document.getElementById('regenerateBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const clearBtn = document.getElementById('clearBtn');
+const CENTER_X = canvas.width / 2;
+const CENTER_Y = canvas.height / 2;
+const MAX_RADIUS = Math.min(canvas.width, canvas.height) / 2 - 20;
 
-// ============================================
-// CONFIGURACIÓN
-// ============================================
-const config = {
+let config = {
     petalCount: 6,
     colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'],
     strokeSize: 3,
-    innerRadius: 0.3,
-    centerX: canvas.width / 2,
-    centerY: canvas.height / 2,
-    maxRadius: Math.min(canvas.width, canvas.height) / 2 - 20
+    innerRadius: 0.3
 };
 
-// Estado del dibujo
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
 let isAnimating = false;
 
 // ============================================
-// FUNCIONES DE DIBUJO
+// 2. FUNCIONES DE DIBUJO
 // ============================================
 
-function getCanvasBgColor() {
-    const isLight = document.body.classList.contains('light-theme');
-    return isLight ? '#f5f0e8' : '#0f0e17';
+function getBgColor() {
+    return document.body.classList.contains('light-theme') ? '#f5f0e8' : '#0f0e17';
 }
 
 function getLineColor() {
-    const isLight = document.body.classList.contains('light-theme');
-    return isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+    return document.body.classList.contains('light-theme') 
+        ? 'rgba(0,0,0,0.06)' 
+        : 'rgba(255,255,255,0.06)';
 }
 
 function drawBackground() {
-    const bgColor = getCanvasBgColor();
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = bgColor;
+    // Fondo
+    ctx.fillStyle = getBgColor();
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     const lineColor = getLineColor();
     
     // Círculos concéntricos
     for (let r = 0.1; r <= 1; r += 0.1) {
-        const radius = config.maxRadius * r;
+        const radius = MAX_RADIUS * r;
         ctx.beginPath();
-        ctx.arc(config.centerX, config.centerY, radius, 0, 2 * Math.PI);
+        ctx.arc(CENTER_X, CENTER_Y, radius, 0, 2 * Math.PI);
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
         ctx.stroke();
@@ -74,10 +57,10 @@ function drawBackground() {
     for (let i = 0; i < config.petalCount; i++) {
         const angle = (i / config.petalCount) * 2 * Math.PI;
         ctx.beginPath();
-        ctx.moveTo(config.centerX, config.centerY);
+        ctx.moveTo(CENTER_X, CENTER_Y);
         ctx.lineTo(
-            config.centerX + Math.cos(angle) * config.maxRadius,
-            config.centerY + Math.sin(angle) * config.maxRadius
+            CENTER_X + Math.cos(angle) * MAX_RADIUS,
+            CENTER_Y + Math.sin(angle) * MAX_RADIUS
         );
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
@@ -86,11 +69,11 @@ function drawBackground() {
 }
 
 function drawPetal(x, y, color, size) {
-    const dx = x - config.centerX;
-    const dy = y - config.centerY;
+    const dx = x - CENTER_X;
+    const dy = y - CENTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    if (distance > config.maxRadius || distance < 5) return;
+    if (distance > MAX_RADIUS || distance < 3) return;
     
     const angle = Math.atan2(dy, dx);
     const step = (2 * Math.PI) / config.petalCount;
@@ -98,10 +81,10 @@ function drawPetal(x, y, color, size) {
     
     for (let i = 0; i < config.petalCount; i++) {
         const rotAngle = angle + i * step;
-        const startX = config.centerX + Math.cos(rotAngle) * innerDist;
-        const startY = config.centerY + Math.sin(rotAngle) * innerDist;
-        const endX = config.centerX + Math.cos(rotAngle) * distance;
-        const endY = config.centerY + Math.sin(rotAngle) * distance;
+        const startX = CENTER_X + Math.cos(rotAngle) * innerDist;
+        const startY = CENTER_Y + Math.sin(rotAngle) * innerDist;
+        const endX = CENTER_X + Math.cos(rotAngle) * distance;
+        const endY = CENTER_Y + Math.sin(rotAngle) * distance;
         
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -113,101 +96,117 @@ function drawPetal(x, y, color, size) {
     }
 }
 
+function drawCenterDot() {
+    ctx.beginPath();
+    ctx.arc(CENTER_X, CENTER_Y, MAX_RADIUS * 0.04, 0, 2 * Math.PI);
+    ctx.fillStyle = config.colors[0];
+    ctx.fill();
+}
+
 // ============================================
-// GENERAR MANDALA ALEATORIO CON ANIMACIÓN
+// 3. GENERAR MANDALA (SIN ANIMACIÓN)
 // ============================================
 
 function generateMandala() {
+    // Evitar múltiples generaciones simultáneas
     if (isAnimating) return;
-    isAnimating = true;
-    regenerateBtn.disabled = true;
-    regenerateBtn.textContent = '⏳ Generando...';
     
+    // Dibujar fondo
     drawBackground();
     
     // Generar puntos
-    const numPoints = 40 + Math.floor(Math.random() * 60);
+    const numPoints = 50 + Math.floor(Math.random() * 50);
     const points = [];
     
     for (let i = 0; i < numPoints; i++) {
         const angle = Math.random() * 2 * Math.PI;
         const distance = 0.1 + Math.random() * 0.85;
-        const radius = config.maxRadius * distance;
-        const x = config.centerX + Math.cos(angle) * radius;
-        const y = config.centerY + Math.sin(angle) * radius;
+        const radius = MAX_RADIUS * distance;
+        const x = CENTER_X + Math.cos(angle) * radius;
+        const y = CENTER_Y + Math.sin(angle) * radius;
         const color = config.colors[i % config.colors.length];
         const size = config.strokeSize * (0.5 + Math.random() * 0.8);
         points.push({ x, y, color, size });
     }
     
-    // Dibujar con animación (usando setTimeout para simular animación)
+    // Dibujar todos los puntos (rápido, sin animación)
+    for (const p of points) {
+        drawPetal(p.x, p.y, p.color, p.size);
+    }
+    
+    // Círculo central
+    drawCenterDot();
+    
+    // Actualizar botón
+    const btn = document.getElementById('regenerateBtn');
+    btn.textContent = '🔄 Generar Mandala';
+    btn.disabled = false;
+    isAnimating = false;
+}
+
+// ============================================
+// 4. GENERAR CON ANIMACIÓN (MÁS LENTA)
+// ============================================
+
+function generateWithAnimation() {
+    if (isAnimating) return;
+    isAnimating = true;
+    
+    const btn = document.getElementById('regenerateBtn');
+    btn.textContent = '⏳ Generando...';
+    btn.disabled = true;
+    
+    drawBackground();
+    
+    // Generar puntos
+    const numPoints = 50 + Math.floor(Math.random() * 50);
+    const points = [];
+    
+    for (let i = 0; i < numPoints; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = 0.1 + Math.random() * 0.85;
+        const radius = MAX_RADIUS * distance;
+        const x = CENTER_X + Math.cos(angle) * radius;
+        const y = CENTER_Y + Math.sin(angle) * radius;
+        const color = config.colors[i % config.colors.length];
+        const size = config.strokeSize * (0.5 + Math.random() * 0.8);
+        points.push({ x, y, color, size });
+    }
+    
     let index = 0;
     
     function drawNext() {
         if (index >= points.length) {
-            // Terminar
+            drawCenterDot();
+            btn.textContent = '🔄 Generar Mandala';
+            btn.disabled = false;
             isAnimating = false;
-            regenerateBtn.disabled = false;
-            regenerateBtn.textContent = '🔄 Generar Mandala';
-            
-            // Círculo central
-            ctx.beginPath();
-            ctx.arc(config.centerX, config.centerY, config.maxRadius * 0.04, 0, 2 * Math.PI);
-            ctx.fillStyle = config.colors[0];
-            ctx.fill();
             return;
         }
         
-        // Dibujar varios puntos a la vez para acelerar
-        const batchSize = 3;
-        for (let i = 0; i < batchSize && index < points.length; i++) {
+        // Dibujar de a 2 puntos por vez para velocidad
+        for (let i = 0; i < 2 && index < points.length; i++) {
             const p = points[index];
             drawPetal(p.x, p.y, p.color, p.size);
             index++;
         }
         
-        // Velocidad de la animación (más bajo = más rápido)
-        const delay = 20;
-        setTimeout(drawNext, delay);
+        // Velocidad de animación (más alto = más rápido)
+        setTimeout(drawNext, 30);
     }
     
     drawNext();
 }
 
 // ============================================
-// FUNCIÓN RÁPIDA (sin animación)
+// 5. EVENTOS DEL CANVAS (DIBUJO MANUAL)
 // ============================================
 
-function generateFast() {
-    if (isAnimating) return;
-    
-    drawBackground();
-    
-    const numPoints = 40 + Math.floor(Math.random() * 60);
-    
-    for (let i = 0; i < numPoints; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const distance = 0.1 + Math.random() * 0.85;
-        const radius = config.maxRadius * distance;
-        const x = config.centerX + Math.cos(angle) * radius;
-        const y = config.centerY + Math.sin(angle) * radius;
-        const color = config.colors[i % config.colors.length];
-        const size = config.strokeSize * (0.5 + Math.random() * 0.8);
-        drawPetal(x, y, color, size);
-    }
-    
-    // Círculo central
-    ctx.beginPath();
-    ctx.arc(config.centerX, config.centerY, config.maxRadius * 0.04, 0, 2 * Math.PI);
-    ctx.fillStyle = config.colors[0];
-    ctx.fill();
-}
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
 
-// ============================================
-// EVENTOS DEL CANVAS
-// ============================================
-
-function getCanvasCoords(e) {
+function getCoords(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
@@ -228,11 +227,11 @@ function getCanvasCoords(e) {
     };
 }
 
-function startDrawing(e) {
+function startDraw(e) {
     if (isAnimating) return;
     e.preventDefault();
     isDrawing = true;
-    const coords = getCanvasCoords(e);
+    const coords = getCoords(e);
     lastX = coords.x;
     lastY = coords.y;
     
@@ -244,97 +243,95 @@ function draw(e) {
     e.preventDefault();
     if (!isDrawing || isAnimating) return;
     
-    const coords = getCanvasCoords(e);
-    const x = coords.x;
-    const y = coords.y;
-    
+    const coords = getCoords(e);
     const color = config.colors[Math.floor(Math.random() * config.colors.length)];
-    drawPetal(x, y, color, config.strokeSize);
+    drawPetal(coords.x, coords.y, color, config.strokeSize);
     
-    lastX = x;
-    lastY = y;
+    lastX = coords.x;
+    lastY = coords.y;
 }
 
-function stopDrawing(e) {
+function stopDraw(e) {
     isDrawing = false;
 }
 
 // Eventos
-canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousedown', startDraw);
 canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mouseleave', stopDrawing);
+canvas.addEventListener('mouseup', stopDraw);
+canvas.addEventListener('mouseleave', stopDraw);
 
-canvas.addEventListener('touchstart', startDrawing, { passive: false });
+canvas.addEventListener('touchstart', startDraw, { passive: false });
 canvas.addEventListener('touchmove', draw, { passive: false });
-canvas.addEventListener('touchend', stopDrawing, { passive: false });
+canvas.addEventListener('touchend', stopDraw, { passive: false });
 
 // ============================================
-// CONTROLES
+// 6. CONTROLES DE LA INTERFAZ
 // ============================================
 
 // Pétalos
-petalButtons.forEach(btn => {
+document.querySelectorAll('.btn-petal').forEach(btn => {
     btn.addEventListener('click', () => {
         if (isAnimating) return;
-        petalButtons.forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.btn-petal').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         config.petalCount = parseInt(btn.dataset.petal);
-        generateFast();
+        generateMandala();
     });
 });
 
 // Colores
-colorInputs.forEach((input, index) => {
+document.querySelectorAll('.color-picker-group input[type="color"]').forEach((input, index) => {
     input.addEventListener('input', () => {
         config.colors[index] = input.value;
-        if (!isAnimating) generateFast();
+        if (!isAnimating) generateMandala();
     });
 });
 
 // Colores aleatorios
-randomColorsBtn.addEventListener('click', () => {
-    for (let i = 0; i < colorInputs.length; i++) {
+document.getElementById('randomColorsBtn').addEventListener('click', () => {
+    const inputs = document.querySelectorAll('.color-picker-group input[type="color"]');
+    for (let i = 0; i < inputs.length; i++) {
         const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-        colorInputs[i].value = randomColor;
+        inputs[i].value = randomColor;
         config.colors[i] = randomColor;
     }
-    if (!isAnimating) generateFast();
+    if (!isAnimating) generateMandala();
 });
 
 // Tamaño de trazo
-strokeSizeInput.addEventListener('input', () => {
-    config.strokeSize = parseInt(strokeSizeInput.value);
-    strokeSizeDisplay.textContent = config.strokeSize;
-    if (!isAnimating) generateFast();
+const strokeInput = document.getElementById('strokeSize');
+const strokeDisplay = document.getElementById('strokeSizeDisplay');
+strokeInput.addEventListener('input', () => {
+    config.strokeSize = parseInt(strokeInput.value);
+    strokeDisplay.textContent = config.strokeSize;
+    if (!isAnimating) generateMandala();
 });
 
 // Radio interno
-innerRadiusInput.addEventListener('input', () => {
-    config.innerRadius = parseFloat(innerRadiusInput.value);
-    innerRadiusDisplay.textContent = config.innerRadius.toFixed(2);
-    if (!isAnimating) generateFast();
+const radiusInput = document.getElementById('innerRadius');
+const radiusDisplay = document.getElementById('innerRadiusDisplay');
+radiusInput.addEventListener('input', () => {
+    config.innerRadius = parseFloat(radiusInput.value);
+    radiusDisplay.textContent = config.innerRadius.toFixed(2);
+    if (!isAnimating) generateMandala();
 });
 
-// Regenerar
-regenerateBtn.addEventListener('click', generateMandala);
-
-// Descargar
-downloadBtn.addEventListener('click', () => {
+// Botones principales
+document.getElementById('regenerateBtn').addEventListener('click', generateWithAnimation);
+document.getElementById('downloadBtn').addEventListener('click', () => {
     const link = document.createElement('a');
     link.download = 'mandala.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
 });
-
-// Limpiar
-clearBtn.addEventListener('click', () => {
+document.getElementById('clearBtn').addEventListener('click', () => {
     if (isAnimating) return;
     drawBackground();
 });
 
 // ============================================
-// TEMA OSCURO/CLARO
+// 7. TEMA OSCURO/CLARO
 // ============================================
 
 function detectSystemTheme() {
@@ -365,7 +362,7 @@ function toggleTheme() {
     }
     
     drawBackground();
-    if (!isAnimating) generateFast();
+    if (!isAnimating) generateMandala();
 }
 
 function loadTheme() {
@@ -389,20 +386,18 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
     if (!localStorage.getItem('theme')) {
         detectSystemTheme();
         drawBackground();
-        if (!isAnimating) generateFast();
+        if (!isAnimating) generateMandala();
     }
 });
 
 // ============================================
-// INICIALIZAR
+// 8. INICIAR
 // ============================================
 
-function init() {
-    loadTheme();
-    drawBackground();
-    generateMandala();
-    
-    console.log('🎨 Generador de Mandalas iniciado!');
-}
+loadTheme();
+drawBackground();
+generateMandala();
 
-init();
+console.log('🎨 Generador de Mandalas iniciado!');
+console.log('🌸 Pétalos:', config.petalCount);
+console.log('🎨 Colores:', config.colors);
