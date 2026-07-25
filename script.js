@@ -584,6 +584,9 @@ function startChainMode() {
     chainHistory = [];
     chainStep = 0;
     
+    // Mostrar botón de detener
+    document.getElementById('stopChainBtn').style.display = 'inline-block';
+    
     // Generar el primer mandala si no hay puntos
     if (currentPoints.length === 0) {
         generateMandala();
@@ -591,7 +594,7 @@ function startChainMode() {
             if (currentPoints.length > 0) {
                 startChainAnimation();
             }
-        }, 200);
+        }, 300);
     } else {
         startChainAnimation();
     }
@@ -601,6 +604,7 @@ function startChainAnimation() {
     isChainMode = true;
     document.getElementById('chainModeBtn').textContent = '🔗 Generando cadena...';
     document.getElementById('chainModeBtn').style.opacity = '0.7';
+    document.getElementById('stopChainBtn').style.display = 'inline-block';
     
     // Guardar el mandala actual como primero de la cadena
     chainHistory.push({
@@ -621,6 +625,20 @@ function startChainAnimation() {
         for (let i = colors.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [colors[i], colors[j]] = [colors[j], colors[i]];
+        }
+        
+        // También variar la forma ocasionalmente (10% de probabilidad)
+        const shapes = ['petal', 'circle', 'star', 'spiral', 'drop', 'triangle'];
+        let currentShape = config.shape;
+        if (Math.random() < 0.1) {
+            const newShape = shapes[Math.floor(Math.random() * shapes.length)];
+            if (newShape !== currentShape) {
+                config.shape = newShape;
+                // Actualizar botón activo
+                document.querySelectorAll('.btn-shape').forEach(b => {
+                    b.classList.toggle('active', b.dataset.shape === newShape);
+                });
+            }
         }
         
         for (let i = 0; i < numPoints; i++) {
@@ -656,12 +674,15 @@ function startChainAnimation() {
         
         chainStep++;
         
-        // Programar siguiente paso según la velocidad
-        const delay = Math.max(200, 2000 - chainSpeed * 90);
+        // Programar siguiente paso según la velocidad (convertir a número)
+        const speed = parseInt(document.getElementById('chainSpeed').value) || 5;
+        // Velocidad: 1 = 2000ms, 20 = 200ms
+        const delay = Math.max(200, 2200 - speed * 100);
         chainAnimationId = setTimeout(generateNextChainStep, delay);
     }
     
-    chainAnimationId = setTimeout(generateNextChainStep, 300);
+    // Iniciar después de un pequeño retraso
+    chainAnimationId = setTimeout(generateNextChainStep, 500);
 }
 
 function stopChainMode() {
@@ -672,7 +693,14 @@ function stopChainMode() {
     }
     document.getElementById('chainModeBtn').textContent = '🔗 Mandalas en cadena';
     document.getElementById('chainModeBtn').style.opacity = '1';
+    document.getElementById('stopChainBtn').style.display = 'inline-block';
 }
+
+// Velocidad de cadena - actualizar variable
+document.getElementById('chainSpeed').addEventListener('input', function() {
+    chainSpeed = parseInt(this.value);
+    document.getElementById('chainSpeedDisplay').textContent = chainSpeed;
+});
 
 // ============================================
 // 8. PALETAS
@@ -883,14 +911,6 @@ document.getElementById('stopChainBtn').addEventListener('click', () => {
         drawMandalaFromPoints(currentPoints, last.rotation * Math.PI / 180);
         savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     }
-});
-
-// --- Velocidad de cadena ---
-const chainSpeedInput = document.getElementById('chainSpeed');
-const chainSpeedDisplay = document.getElementById('chainSpeedDisplay');
-chainSpeedInput.addEventListener('input', () => {
-    chainSpeed = parseInt(chainSpeedInput.value);
-    chainSpeedDisplay.textContent = chainSpeed;
 });
 
 // --- Botones principales ---
