@@ -1,5 +1,5 @@
 // ============================================
-// GENERADOR DE MANDALAS
+// GENERADOR DE MANDALAS CON ANIMACIÓN
 // ============================================
 
 // Elementos del DOM
@@ -36,6 +36,13 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
+// Estado de animación
+let animationId = null;
+let isAnimating = false;
+let animationPoints = [];
+let animationIndex = 0;
+let animationSpeed = 50; // ms entre puntos
+
 // ============================================
 // FUNCIONES DE DIBUJO
 // ============================================
@@ -44,13 +51,32 @@ function getColor(index) {
     return config.colors[index % config.colors.length];
 }
 
+function drawSinglePetal(x, y, color, strokeSize, angleOffset = 0) {
+    const angle = Math.atan2(y - config.centerY, x - config.centerX) + angleOffset;
+    const distance = Math.sqrt((x - config.centerX) ** 2 + (y - config.centerY) ** 2);
+    
+    if (distance > config.maxRadius) return;
+    
+    const startX = config.centerX + Math.cos(angle) * distance * config.innerRadius;
+    const startY = config.centerY + Math.sin(angle) * distance * config.innerRadius;
+    const endX = config.centerX + Math.cos(angle) * distance;
+    const endY = config.centerY + Math.sin(angle) * distance;
+    
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeSize;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+}
+
 function drawPetal(x, y, radius, color, strokeSize) {
     const angle = Math.atan2(y - config.centerY, x - config.centerX);
     const distance = Math.sqrt((x - config.centerX) ** 2 + (y - config.centerY) ** 2);
     
     if (distance > config.maxRadius) return;
     
-    const adjustedRadius = distance * (1 - config.innerRadius);
     const startX = config.centerX + Math.cos(angle) * distance * config.innerRadius;
     const startY = config.centerY + Math.sin(angle) * distance * config.innerRadius;
     const endX = config.centerX + Math.cos(angle) * distance;
@@ -85,128 +111,8 @@ function drawPetal(x, y, radius, color, strokeSize) {
     }
 }
 
-function drawCircle(x, y, radius, color, strokeSize) {
-    const distance = Math.sqrt((x - config.centerX) ** 2 + (y - config.centerY) ** 2);
-    if (distance > config.maxRadius) return;
-    
-    const adjustedRadius = radius * (1 - config.innerRadius);
-    const centerX = config.centerX + (x - config.centerX) * config.innerRadius;
-    const centerY = config.centerY + (y - config.centerY) * config.innerRadius;
-    
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, adjustedRadius, 0, 2 * Math.PI);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = strokeSize;
-    ctx.stroke();
-    
-    // Simetría
-    const step = (2 * Math.PI) / config.petalCount;
-    for (let i = 1; i < config.petalCount; i++) {
-        const rotAngle = i * step;
-        const rotX = config.centerX + Math.cos(Math.atan2(y - config.centerY, x - config.centerX) + rotAngle) * distance;
-        const rotY = config.centerY + Math.sin(Math.atan2(y - config.centerY, x - config.centerX) + rotAngle) * distance;
-        const rotCenterX = config.centerX + (rotX - config.centerX) * config.innerRadius;
-        const rotCenterY = config.centerY + (rotY - config.centerY) * config.innerRadius;
-        
-        ctx.beginPath();
-        ctx.arc(rotCenterX, rotCenterY, adjustedRadius, 0, 2 * Math.PI);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = strokeSize;
-        ctx.stroke();
-    }
-}
-
 // ============================================
-// EVENTOS DEL CANVAS (TOUCH Y MOUSE)
-// ============================================
-
-function getCanvasCoords(e) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    let clientX, clientY;
-    if (e.touches) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-        e.preventDefault();
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-    }
-    
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-    return { x, y };
-}
-
-function startDrawing(e) {
-    e.preventDefault();
-    isDrawing = true;
-    const coords = getCanvasCoords(e);
-    lastX = coords.x;
-    lastY = coords.y;
-    
-    // Dibujar un punto al empezar
-    const colorIndex = Math.floor(Math.random() * config.colors.length);
-    const color = config.colors[colorIndex];
-    drawPetal(lastX, lastY, config.strokeSize, color, config.strokeSize);
-}
-
-function draw(e) {
-    e.preventDefault();
-    if (!isDrawing) return;
-    
-    const coords = getCanvasCoords(e);
-    const x = coords.x;
-    const y = coords.y;
-    
-    // Dibujar una línea desde la última posición
-    const colorIndex = Math.floor(Math.random() * config.colors.length);
-    const color = config.colors[colorIndex];
-    
-    // Dibujar pétalos
-    const distance = Math.sqrt((x - config.centerX) ** 2 + (y - config.centerY) ** 2);
-    const angle = Math.atan2(y - config.centerY, x - config.centerX);
-    const step = (2 * Math.PI) / config.petalCount;
-    
-    for (let i = 0; i < config.petalCount; i++) {
-        const rotAngle = i * step;
-        const rotX = config.centerX + Math.cos(angle + rotAngle) * distance;
-        const rotY = config.centerY + Math.sin(angle + rotAngle) * distance;
-        const rotStartX = config.centerX + Math.cos(angle + rotAngle) * distance * config.innerRadius;
-        const rotStartY = config.centerY + Math.sin(angle + rotAngle) * distance * config.innerRadius;
-        
-        ctx.beginPath();
-        ctx.moveTo(rotStartX, rotStartY);
-        ctx.lineTo(rotX, rotY);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = config.strokeSize;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-    }
-    
-    lastX = x;
-    lastY = y;
-}
-
-function stopDrawing(e) {
-    isDrawing = false;
-}
-
-// Eventos de ratón
-canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mouseleave', stopDrawing);
-
-// Eventos táctiles
-canvas.addEventListener('touchstart', startDrawing, { passive: false });
-canvas.addEventListener('touchmove', draw, { passive: false });
-canvas.addEventListener('touchend', stopDrawing, { passive: false });
-
-// ============================================
-// DIBUJAR MANDALA DE FONDO (PATRÓN INICIAL)
+// DIBUJAR MANDALA DE FONDO
 // ============================================
 
 function drawBackgroundMandala() {
@@ -242,7 +148,189 @@ function drawBackgroundMandala() {
 }
 
 // ============================================
-// GENERAR MANDALA ALEATORIO
+// GENERAR MANDALA CON ANIMACIÓN
+// ============================================
+
+function generatePoints() {
+    const points = [];
+    const numPoints = 30 + Math.floor(Math.random() * 50);
+    
+    for (let i = 0; i < numPoints; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = 0.1 + Math.random() * 0.85;
+        const radius = config.maxRadius * distance;
+        const x = config.centerX + Math.cos(angle) * radius;
+        const y = config.centerY + Math.sin(angle) * radius;
+        
+        // Calcular cuántas veces se repite este punto (para variar intensidad)
+        const repeat = 1 + Math.floor(Math.random() * 2);
+        const color = config.colors[i % config.colors.length];
+        const size = config.strokeSize * (0.5 + Math.random() * 0.8);
+        
+        points.push({ x, y, color, size, repeat });
+    }
+    
+    return points;
+}
+
+function drawAnimatedPoint(point, progress) {
+    // Dibujar el punto con un efecto de "desvanecimiento" progresivo
+    const angle = Math.atan2(point.y - config.centerY, point.x - config.centerX);
+    const distance = Math.sqrt((point.x - config.centerX) ** 2 + (point.y - config.centerY) ** 2);
+    const step = (2 * Math.PI) / config.petalCount;
+    
+    // Dibujar los pétalos simétricos con el progreso
+    for (let i = 0; i < config.petalCount; i++) {
+        const rotAngle = i * step;
+        const startX = config.centerX + Math.cos(angle + rotAngle) * distance * config.innerRadius;
+        const startY = config.centerY + Math.sin(angle + rotAngle) * distance * config.innerRadius;
+        const endX = config.centerX + Math.cos(angle + rotAngle) * distance * progress;
+        const endY = config.centerY + Math.sin(angle + rotAngle) * distance * progress;
+        
+        // Efecto de opacidad según el progreso
+        const opacity = Math.min(1, progress * 1.5);
+        
+        ctx.globalAlpha = opacity;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = point.color;
+        ctx.lineWidth = point.size;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function animateMandala() {
+    // Detener animación anterior si existe
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+    
+    isAnimating = true;
+    regenerateBtn.disabled = true;
+    regenerateBtn.textContent = '⏳ Generando...';
+    
+    // Limpiar y dibujar fondo
+    drawBackgroundMandala();
+    
+    // Generar puntos
+    animationPoints = generatePoints();
+    animationIndex = 0;
+    let progress = 0;
+    const totalSteps = animationPoints.length * 20; // 20 pasos por punto
+    
+    function step() {
+        if (progress >= totalSteps) {
+            // Animación completada
+            isAnimating = false;
+            regenerateBtn.disabled = false;
+            regenerateBtn.textContent = '🔄 Generar Mandala';
+            
+            // Asegurarse de que todos los puntos estén completos
+            animationPoints.forEach(point => {
+                const distance = Math.sqrt((point.x - config.centerX) ** 2 + (point.y - config.centerY) ** 2);
+                const angle = Math.atan2(point.y - config.centerY, point.x - config.centerX);
+                const step = (2 * Math.PI) / config.petalCount;
+                
+                for (let i = 0; i < config.petalCount; i++) {
+                    const rotAngle = i * step;
+                    const startX = config.centerX + Math.cos(angle + rotAngle) * distance * config.innerRadius;
+                    const startY = config.centerY + Math.sin(angle + rotAngle) * distance * config.innerRadius;
+                    const endX = config.centerX + Math.cos(angle + rotAngle) * distance;
+                    const endY = config.centerY + Math.sin(angle + rotAngle) * distance;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = point.color;
+                    ctx.lineWidth = point.size;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                }
+            });
+            
+            // Círculo central
+            ctx.beginPath();
+            ctx.arc(config.centerX, config.centerY, config.maxRadius * 0.05, 0, 2 * Math.PI);
+            ctx.fillStyle = config.colors[0];
+            ctx.fill();
+            
+            return;
+        }
+        
+        // Calcular qué punto estamos dibujando
+        const pointIndex = Math.floor(progress / 20);
+        const pointProgress = (progress % 20) / 20;
+        
+        if (pointIndex < animationPoints.length) {
+            const point = animationPoints[pointIndex];
+            
+            // Redibujar todos los puntos anteriores (completos)
+            for (let i = 0; i < pointIndex; i++) {
+                const p = animationPoints[i];
+                const dist = Math.sqrt((p.x - config.centerX) ** 2 + (p.y - config.centerY) ** 2);
+                const ang = Math.atan2(p.y - config.centerY, p.x - config.centerX);
+                const step = (2 * Math.PI) / config.petalCount;
+                
+                for (let j = 0; j < config.petalCount; j++) {
+                    const rotAngle = j * step;
+                    const startX = config.centerX + Math.cos(ang + rotAngle) * dist * config.innerRadius;
+                    const startY = config.centerY + Math.sin(ang + rotAngle) * dist * config.innerRadius;
+                    const endX = config.centerX + Math.cos(ang + rotAngle) * dist;
+                    const endY = config.centerY + Math.sin(ang + rotAngle) * dist;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = p.size;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                }
+            }
+            
+            // Dibujar el punto actual con su progreso
+            const dist = Math.sqrt((point.x - config.centerX) ** 2 + (point.y - config.centerY) ** 2);
+            const ang = Math.atan2(point.y - config.centerY, point.x - config.centerX);
+            const step = (2 * Math.PI) / config.petalCount;
+            
+            // Usar una curva de easing para que el movimiento sea más natural
+            const easedProgress = easeOutCubic(pointProgress);
+            
+            for (let j = 0; j < config.petalCount; j++) {
+                const rotAngle = j * step;
+                const startX = config.centerX + Math.cos(ang + rotAngle) * dist * config.innerRadius;
+                const startY = config.centerY + Math.sin(ang + rotAngle) * dist * config.innerRadius;
+                const endX = config.centerX + Math.cos(ang + rotAngle) * dist * easedProgress;
+                const endY = config.centerY + Math.sin(ang + rotAngle) * dist * easedProgress;
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = point.color;
+                ctx.lineWidth = point.size;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+        }
+        
+        progress++;
+        animationId = requestAnimationFrame(step);
+    }
+    
+    animationId = requestAnimationFrame(step);
+}
+
+// Easing function para animación suave
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+}
+
+// ============================================
+// GENERAR MANDALA SIN ANIMACIÓN (para uso rápido)
 // ============================================
 
 function generateRandomMandala() {
@@ -294,12 +382,100 @@ function generateRandomMandala() {
 }
 
 // ============================================
+// EVENTOS DEL CANVAS (TOUCH Y MOUSE)
+// ============================================
+
+function getCanvasCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    let clientX, clientY;
+    if (e.touches) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+        e.preventDefault();
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+    
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    return { x, y };
+}
+
+function startDrawing(e) {
+    if (isAnimating) return;
+    e.preventDefault();
+    isDrawing = true;
+    const coords = getCanvasCoords(e);
+    lastX = coords.x;
+    lastY = coords.y;
+    
+    const colorIndex = Math.floor(Math.random() * config.colors.length);
+    const color = config.colors[colorIndex];
+    drawPetal(lastX, lastY, config.strokeSize, color, config.strokeSize);
+}
+
+function draw(e) {
+    e.preventDefault();
+    if (!isDrawing || isAnimating) return;
+    
+    const coords = getCanvasCoords(e);
+    const x = coords.x;
+    const y = coords.y;
+    
+    const colorIndex = Math.floor(Math.random() * config.colors.length);
+    const color = config.colors[colorIndex];
+    
+    const distance = Math.sqrt((x - config.centerX) ** 2 + (y - config.centerY) ** 2);
+    const angle = Math.atan2(y - config.centerY, x - config.centerX);
+    const step = (2 * Math.PI) / config.petalCount;
+    
+    for (let i = 0; i < config.petalCount; i++) {
+        const rotAngle = i * step;
+        const rotX = config.centerX + Math.cos(angle + rotAngle) * distance;
+        const rotY = config.centerY + Math.sin(angle + rotAngle) * distance;
+        const rotStartX = config.centerX + Math.cos(angle + rotAngle) * distance * config.innerRadius;
+        const rotStartY = config.centerY + Math.sin(angle + rotAngle) * distance * config.innerRadius;
+        
+        ctx.beginPath();
+        ctx.moveTo(rotStartX, rotStartY);
+        ctx.lineTo(rotX, rotY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = config.strokeSize;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    }
+    
+    lastX = x;
+    lastY = y;
+}
+
+function stopDrawing(e) {
+    isDrawing = false;
+}
+
+// Eventos de ratón
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseleave', stopDrawing);
+
+// Eventos táctiles
+canvas.addEventListener('touchstart', startDrawing, { passive: false });
+canvas.addEventListener('touchmove', draw, { passive: false });
+canvas.addEventListener('touchend', stopDrawing, { passive: false });
+
+// ============================================
 // CONTROLES
 // ============================================
 
 // Pétalos
 petalButtons.forEach(btn => {
     btn.addEventListener('click', () => {
+        if (isAnimating) return;
         petalButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         config.petalCount = parseInt(btn.dataset.petal);
@@ -337,8 +513,11 @@ innerRadiusInput.addEventListener('input', () => {
     innerRadiusDisplay.textContent = config.innerRadius.toFixed(2);
 });
 
-// Regenerar
-regenerateBtn.addEventListener('click', generateRandomMandala);
+// Regenerar - CON ANIMACIÓN
+regenerateBtn.addEventListener('click', () => {
+    if (isAnimating) return;
+    animateMandala();
+});
 
 // Descargar
 downloadBtn.addEventListener('click', () => {
@@ -350,6 +529,7 @@ downloadBtn.addEventListener('click', () => {
 
 // Limpiar
 clearBtn.addEventListener('click', () => {
+    if (isAnimating) return;
     drawBackgroundMandala();
 });
 
@@ -400,7 +580,6 @@ function loadTheme() {
         document.body.classList.remove('light-theme');
         themeBtn.textContent = '🌙';
     } else {
-        // Si no hay tema guardado, usar el del sistema
         detectSystemTheme();
     }
 }
@@ -411,7 +590,6 @@ function loadTheme() {
 
 document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
-// Escuchar cambios en el tema del sistema
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (!localStorage.getItem('theme')) {
         detectSystemTheme();
@@ -423,16 +601,16 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 // ============================================
 
 function init() {
-    // Cargar tema
     loadTheme();
-    
-    // Dibujar mandala de fondo
     drawBackgroundMandala();
-    generateRandomMandala();
+    
+    // Generar mandala inicial CON animación
+    setTimeout(() => {
+        animateMandala();
+    }, 300);
     
     console.log('🎨 Generador de Mandalas iniciado!');
     console.log('🌙 Tema cargado:', localStorage.getItem('theme') || 'sistema');
 }
 
-// Ejecutar
 init();
