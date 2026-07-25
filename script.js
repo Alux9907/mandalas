@@ -419,14 +419,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 // ============================================
-// AL INICIALIZAR
-// ============================================
-
-// Cargar tema después de init
-// Reemplaza el init actual con esto:
-
-// ============================================
-// INICIALIZAR (VERSIÓN FINAL)
+// INICIALIZAR
 // ============================================
 
 function init() {
@@ -441,19 +434,5 @@ function init() {
     console.log('🌙 Tema cargado:', localStorage.getItem('theme') || 'sistema');
 }
 
-// Eliminar las llamadas anteriores y usar esta
-// drawBackgroundMandala();
-// generateRandomMandala();
-
+// Ejecutar
 init();
-
-
-// ============================================
-// INICIALIZAR
-// ============================================
-
-drawBackgroundMandala();
-generateRandomMandala();
-
-console.log('🎨 Generador de Mandalas iniciado!');
-console.log('🖌️ Dibuja en el canvas para crear patrones simétricos');
